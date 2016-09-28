@@ -1,0 +1,63 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Home";
+    Database db = Database.Open( "StarterSite" );
+    IEnumerable< dynamic > users = db.Query( "SELECT * FROM UserProfile ORDER BY Email" );
+}
+
+
+@section featured { 
+<section class="featured">
+    <div class="content-wrapper">
+        <hgroup class="title">
+            <h1>@Page.Title.</h1>
+        </hgroup>
+        <p>
+            The Oddzes are a skittles team playing in the mens league at the 
+            <a href="http://www.consticlub.co.uk" title="Chippenham Constitutional Club Website">Chippenham Constitutional Club</a>.<br>           
+            Team members who are also "Scorers" can log in to record the scores for a game.
+        </p>
+    </div>
+</section>
+}
+
+<h3>The Oddzes are:</h3>
+
+<ul>
+    @foreach( dynamic user in users )
+    {
+        // Don't list the ANO1, ANO2 ect members
+        if ( user.TeamRole != "Spare" )
+        {
+            // Get the roles associated with this user
+            string[] roles = Roles.GetRolesForUser( user.Email );
+            if ( ( user.TeamRole.Length == 0 ) && ( roles.Length == 0 ) )
+            {
+               <p>@user.FullName (@user.Email)</p>
+            }
+            else
+            { 
+                // This user has either a defined team roles, or login based role so display them as nice as possible
+                string roleString = "";
+                if ( user.TeamRole.Length > 0 )
+                {
+                    roleString += user.TeamRole;
+                }
+
+                foreach( string role in roles )
+                {
+                    if ( roleString.Length == 0 )
+                    {
+                        roleString += role;
+                    }
+                    else
+                    {
+                        roleString += ", " + role;
+                    }
+                }
+
+                <p>@user.FullName (@user.Email) - @roleString</p>
+            }
+        }
+    }
+ </ul>

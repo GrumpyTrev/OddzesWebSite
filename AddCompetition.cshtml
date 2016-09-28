@@ -1,0 +1,83 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Add League";
+
+    // Initialise general page variables
+    string name = "";
+    bool matchPlay = false;
+    bool locked = false;
+
+    Database db = Database.Open( "StarterSite" );
+
+    // Setup validation
+    Validation.RequireField( "name", "You must specify a league name." );
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true ) 
+    {
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true) 
+        {
+            name = Request.Form[ "name" ];
+            matchPlay = Request.Form[ "matchPlay" ].AsBool();
+            locked = Request.Form[ "locked" ].AsBool();
+
+            // Make sure that a competition with the same name does not already exist
+            if ( db.QueryValue( string.Format( "SELECT * FROM Competition WHERE Name = '{0}'", name ) ) != null )
+            {
+                ModelState.AddFormError( "The league name already exists" );
+            }
+            else
+            {
+                // Add a new entry and return to the results page
+                db.Execute( "INSERT INTO Competition (Name, Matchplay, Locked) VALUES (@0, @1, @2)", name, matchPlay, locked );
+                Response.Redirect( "~/Results" );
+            }
+        }
+    }
+}
+
+@section featured { 
+<section class="featured">
+    <div class="content-wrapper">
+        <hgroup class="title">
+            <h1>@Page.Title.</h1>
+        </hgroup>
+        <p>
+            Use the form below to add a new league to the database. The new league will be appended to
+            the end of the list. <br>
+            To change the details for an existing league first select the competition from the Results page.
+        </p>
+    </div>
+</section>
+}
+
+<section>
+
+    <form method="post">
+        @AntiForgery.GetHtml()
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary( "Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null )
+
+        <fieldset>
+            <legend>Add new league</legend>
+            <ol>
+                <li>
+                    <input type="text" id="name" name="name" value="@name" @Validation.For( "name" )/>
+                    <label for="name">Name</label>
+                    @Html.ValidationMessage("name")
+                </li>
+                <li>
+                    <input type="checkbox" id="matchPlay" name="matchPlay" value="true" checked="@matchPlay" />
+                    <label class="checkbox" for="matchPlay">Match play</label>
+                </li>
+                <li>
+                    <input type="checkbox" id="locked" name="locked" value="true" checked="@locked" />
+                    <label class="checkbox" for="locked">Locked</label>
+                </li>
+            </ol>
+            <input type="submit" value="Add competition" id="submit" />
+        </fieldset>
+    </form>
+
+</section>

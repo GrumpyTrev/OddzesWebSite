@@ -1,0 +1,21 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    var fileName = Server.MapPath( "~/App_Data/" + UrlData[ 0 ] );
+    var readableName = UrlData[ 1 ];
+    Page.Title = readableName;
+}
+
+@section featured { 
+<section class="featured">
+    <div class="content-wrapper">
+        <hgroup class="title">
+            <h1>@Page.Title.</h1>
+        </hgroup>
+     </div>
+</section>
+}
+
+@Html.Raw(File.ReadAllText( fileName ))
+
+
+

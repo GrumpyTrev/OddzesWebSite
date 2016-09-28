@@ -1,0 +1,639 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+
+    int gameId = UrlData[ 0 ].AsInt();
+    bool matchPlay = UrlData[ 1 ].AsBool();
+
+    Database db = Database.Open( "StarterSite" );
+    GameDetails.Game gameDetails = GameDetails.Game.Deserialise( db, gameId );
+
+    // Get all the user names to populate the dropdown list
+    // TO DO - Order the player list so that the ANO players are at the end.
+    IEnumerable< dynamic > users = db.Query( "SELECT * FROM UserProfile WHERE TeamRole <> 'Retired'" );
+
+    if ( gameDetails != null )
+    {
+        Page.Title = gameDetails.Opponents + " on " + gameDetails.Date.ToLongDateString();
+
+        // If this is a POST request, validate and process data
+        if ( IsPost == true )
+        {
+            // Check for 'action' values first
+            if ( Request[ "action" ] == "Delete game" )
+            {
+                // Delete the entry specified by the gameId and go back to the Results page for the league
+                // Delete any averages associated with the game
+                db.Execute( "DELETE FROM Average WHERE Game=@0", gameId );
+
+                // Delete each set and its scores
+                for ( int index = 0; index < 2; ++index )
+                {
+                    GameDetails.SetData setData = gameDetails.Sets[ index ];
+                    if ( setData != null )
+                    {
+                        foreach ( GameDetails.Score gameScore in setData.Scores )
+                        {
+                            db.Execute( "DELETE FROM Score WHERE Id=@0", gameScore.Identity );
+                        }
+
+                        db.Execute( "DELETE FROM Sets WHERE Id=@0", setData.Identity );
+                    }
+                }
+
+                // Finally the game
+                db.Execute( "DELETE FROM Game WHERE Id=@0", gameId );
+
+                if ( Session[ "previousUrl" ] != null )
+                {
+                    Response.Redirect( Session[ "previousUrl" ].ToString() );
+                }
+            }
+            else if ( Request[ "action" ] == "Game finished" )
+            {
+                // Close this game
+                db.Execute( "UPDATE Game SET InProgress=0 WHERE Id=@0", gameId );
+
+                // If the last score on set 2 has been set then mark this game as complete
+                if ( gameDetails.Sets[ 1 ].Scores[ 5 ].Legs[ 2 ] != -1 )
+                {
+                    db.Execute( "UPDATE Game SET Complete=1 WHERE Id=@0", gameId );
+                }
+
+                Response.Redirect( Request.RawUrl );
+            }
+            else if ( Request[ "action" ] == "Record scores" )
+            {
+                // Close any existing game in progress
+                if ( gameDetails.OtherGameInProgress != null )
+                {
+                    db.Execute( "UPDATE Game SET InProgress=0 WHERE Id=@0", gameDetails.OtherGameInProgress.Id );
+                }
+
+                // Open this game for editing
+                db.Execute( "UPDATE Game SET InProgress=1 WHERE Id=@0", gameId );
+
+                gameDetails.InitialiseGame( db );
+
+                Response.Redirect( Request.RawUrl );
+            }
+            else if ( Request[ "action" ] == "Copy players from Set 1" )
+            {
+                gameDetails.CopyPlayersFromSet1( db );
+
+                Response.Redirect( Request.RawUrl );
+            }
+            else
+            {
+                // Look for a player name change
+                string playerName = Request[ "player" ];
+                if ( string.IsNullOrEmpty( playerName ) == false )
+                {
+                    int set = Request[ "set" ].AsInt();
+                    int score = Request[ "score" ].AsInt();
+                    gameDetails.SetPlayerName( db, set, score, playerName );
+
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
+
+                // Look for a score change
+                if ( string.IsNullOrEmpty( Request[ "pins" ] ) == false )
+                {
+                    int pins = Request[ "pins" ].AsInt();
+                    int set = Request[ "set" ].AsInt();
+                    int score = Request[ "score" ].AsInt();
+                    int leg = Request[ "leg" ].AsInt();
+
+                    // Get the old value for this score and use it to update the associated average
+                    int previousScore = gameDetails.Sets[ set ].Scores[ score ].Legs[ leg ];
+                    if ( previousScore != pins )
+                    {
+                        // Average for the specified player needs updating - need to find the associated record in the gameDetails
+                        int scorePlayerId = gameDetails.Sets[ set ].Scores[ score ].PlayerId;
+                        List< AverageDetails.Average>.Enumerator enumerator = gameDetails.Averages.AverageCollection.GetEnumerator();
+                        AverageDetails.Average avgToUpdate = null;
+
+                        while ( ( avgToUpdate == null ) && ( enumerator.MoveNext() == true ) )
+                        {
+                            if ( enumerator.Current.PlayerId == scorePlayerId )
+                            {
+                                avgToUpdate = enumerator.Current;
+                            }
+                        }
+
+                        if ( avgToUpdate != null )
+                        {
+                            avgToUpdate.UpdateScore( db, previousScore, pins );
+                        }
+                    }
+
+                    gameDetails.SetScore( db, set, score, leg, pins );
+
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
+
+                string pointsString = Request[ "points" ];
+                if ( string.IsNullOrEmpty( pointsString ) == false )
+                {
+                    decimal points = ( decimal )( ( pointsString == "0" ) ? 0.0 : ( ( pointsString == "1" ) ? 1.0 : 0.5 ) );
+                    int set = Request[ "set" ].AsInt();
+                    int score = Request[ "score" ].AsInt();
+                    int leg = Request[ "leg" ].AsInt();
+
+                    gameDetails.SetPoints( db, set, score, leg, points );
+
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
+
+                // Look for a total score for us change
+                if ( string.IsNullOrEmpty( Request[ "usScore" ] ) == false )
+                {
+                    int usScore = Request[ "usScore" ].AsInt();
+
+                    gameDetails.SetUsScore( db, usScore );
+
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
+
+                // Look for a total score for them change
+                if ( string.IsNullOrEmpty( Request[ "themScore" ] ) == false )
+                {
+                    int themScore = Request[ "themScore" ].AsInt();
+
+                    gameDetails.SetThemScore( db, themScore );
+
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
+            }
+        }
+        else
+        {
+            if ( Request.UrlReferrer != null )
+            {
+                Session[ "previousUrl" ] = Request.UrlReferrer.ToString();
+            }
+        }
+    }
+}
+
+@section featured 
+{ 
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+        </div>
+    </section>
+}
+
+<script type="text/javascript">
+    function selectPlayerName( dropDownBox, setIndex, scoreIndex )
+    {
+        document.getElementById('player').value = document.getElementById(dropDownBox).value;
+        document.getElementById('set').value = setIndex;
+        document.getElementById('score').value = scoreIndex;
+        document.getElementById('scoresForm').submit();
+    }
+
+    function setScore(dropDownBox, setIndex, scoreIndex, legIndex) {
+        document.getElementById('pins').value = document.getElementById(dropDownBox).value;
+        document.getElementById('set').value = setIndex;
+        document.getElementById('score').value = scoreIndex;
+        document.getElementById('leg').value = legIndex;
+        document.getElementById('scoresForm').submit();
+    }
+
+    function setPoints(dropDownBox, setIndex, scoreIndex, legIndex) {
+        document.getElementById('points').value = document.getElementById(dropDownBox).value;
+        document.getElementById('set').value = setIndex;
+        document.getElementById('score').value = scoreIndex;
+        document.getElementById('leg').value = legIndex;
+        document.getElementById('scoresForm').submit();
+    }
+
+    function setOurScore() {
+        document.getElementById('usScore').value = document.getElementById('OurScore').value;
+        document.getElementById('scoresForm').submit();
+    }
+
+    function setTheirScore() {
+        document.getElementById('themScore').value = document.getElementById('TheirScore').value;
+        document.getElementById('scoresForm').submit();
+    }
+</script>
+
+@functions
+{
+    //
+    // String representation of a leg score
+    //
+    string LegString( int pins )
+    {
+        return ( pins == -1 ) ? "" : pins.ToString();
+    }
+
+    //
+    // String representation of match points
+    //
+    string PointsString( decimal points )
+    {
+        return ( points == 0 ) ? "0" : ( ( points == 1 ) ? "1" : '\u00BD'.ToString() );
+    }
+}
+
+
+@if ( ( gameDetails != null ) && ( gameDetails.SetsAvailable == true ) )
+{
+    // Different format for a game in progress
+    if ( gameDetails.InProgress == true )
+    {
+        // Used to give input dropdowns a unique name
+        int dropDownIndex = 0;
+
+        // Hidden form elements to hold request details sent to the server
+        <form id="scoresForm" method="post">
+            <input type="hidden" id="player" name="player" value="" /> 
+            <input type="hidden" id="set" name="set" value="" /> 
+            <input type="hidden" id="score" name="score" value="" /> 
+            <input type="hidden" id="leg" name="leg" value="" /> 
+            <input type="hidden" id="pins" name="pins" value="" /> 
+            <input type="hidden" id="points" name="points" value="" /> 
+            <input type="hidden" id="usScore" name="usScore" value="" /> 
+            <input type="hidden" id="themScore" name="themScore" value="" /> 
+ 
+            <!-- Enumerate the SetData collection -->
+            @for ( int index = 0; index < 2; ++index )
+            {
+                GameDetails.SetData setData = gameDetails.Sets[ index ];
+                if ( setData != null )
+                {
+                    // Need to work out for each set whether the player names are valid and generate error strings for those that aren't
+                    HashSet< string > playerSet = new HashSet< string >();
+                    bool playersValid = true;
+                    string[] playerError = new string[ 6 ];
+
+                    for ( int scoreIndex = 0; scoreIndex < 6; scoreIndex++ )
+                    {
+                        GameDetails.Score playerScore = setData.Scores[ scoreIndex ];
+                        playerError[ scoreIndex ] = "";
+
+                        // Check if player name is specified and unique
+                        if ( ( playerScore.PlayerId == -1) || ( playerSet.Contains( playerScore.PlayerName ) == true ) )
+                        {
+                            playersValid = false;
+                            if (  playerScore.PlayerId != -1 )
+                            {
+                                playerError[ scoreIndex ] = "Duplicate player name";
+                            }
+                        }
+                        else
+                        {
+                            playerSet.Add( playerScore.PlayerName );
+                        }
+                    }
+
+                    // Now draw the table for the set
+                    <table>
+                        <tr>
+                            <th>Set @( index + 1 )</th>
+                            <th>Leg 1</th>
+                            @if ( matchPlay == true )
+                            {
+                                <th>Points</th>
+                            }
+                            <th>Leg 2</th>
+                            @if ( matchPlay == true )
+                            {
+                                <th>Points</th>
+                            }
+                            <th>Leg 3</th>
+                            @if ( matchPlay == true )
+                            {
+                                <th>Points</th>
+                            }
+                            <th>Total</th>
+                        </tr>
+                        @for ( int scoreIndex = 0; scoreIndex < 6; scoreIndex++ )
+                        {
+                            GameDetails.Score playerScore = setData.Scores[ scoreIndex ];
+
+                            // Need a unique name for all the input elements so that they can be referenced individually in JavaScript
+                            string dropName = "drop" + dropDownIndex++;
+
+                            <tr>
+                                <td>
+                                    <select id="@dropName" onchange="selectPlayerName( '@dropName', '@index', '@scoreIndex' );">
+                                        @if ( playerScore.PlayerId == -1 )
+                                        {
+                                            <option selected="selected"></option>
+                                        }
+                                        @foreach ( dynamic user in users )
+                                        {
+                                            if ( playerScore.PlayerName == user.email )
+                                            {
+                                                <option selected="selected">@user.email</option>
+                                            }
+                                            else
+                                            {
+                                                <option>@user.email</option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+
+                                @if ( playersValid == true )
+                                {
+                                    for ( int legIndex = 0; legIndex < 3; legIndex++ )
+                                    {
+                                        dropName = "drop" + dropDownIndex++;
+
+                                        <td>
+                                            <select id="@dropName" onchange="setScore( '@dropName', '@index', '@scoreIndex', '@legIndex' );">
+                                                @if ( playerScore.Legs[ legIndex ] == -1 )
+                                                {
+                                                    <option selected="selected"></option>
+                                                }
+                                                @for ( int possibleScore = 0; possibleScore < 28; possibleScore++ )
+                                                {
+                                                    if ( playerScore.Legs[ legIndex ] == possibleScore )
+                                                    {
+                                                        <option selected="selected">@possibleScore</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option>@possibleScore</option>
+                                                    }
+                                                }
+                                            </select>
+                                        </td>
+
+                                        if ( matchPlay == true )
+                                        {
+                                            dropName = "drop" + dropDownIndex++;
+
+                                            <td>
+                                                <select id="@dropName" onchange="setPoints( '@dropName', '@index', '@scoreIndex', '@legIndex' );">
+                                                    @if ( playerScore.Points[ legIndex ] == 0 )
+                                                    {
+                                                        <option selected="selected">0</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option>0</option>
+                                                    }
+
+                                                    @if ( playerScore.Points[ legIndex ] == 1 )
+                                                    {
+                                                        <option selected="selected">1</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option>1</option>
+                                                    }
+
+                                                    @if ( playerScore.Points[ legIndex ] == ( decimal )0.5 )
+                                                    {
+                                                        <option selected="selected">&#189</option>
+                                                    }
+                                                    else
+                                                    {
+                                                        <option>&#189</option>
+                                                    }
+                                                </select>
+                                            </td>
+                                        }
+                                    }
+
+                                    if ( playerScore.Total != -1 )
+                                    {
+                                        <td>@playerScore.Total</td>
+                                    }
+                                    else
+                                    {
+                                        <td></td>
+                                    }
+                                }
+                                else
+                                {
+                                    // If this is Set 2 and none of the players have been choosen, and the players for Set 1 have been choosen then
+                                    // display a button to allow the Set 2 players to be copied from Set 1
+                                    if ( ( index == 1 ) && ( setData.PlayersNotSet == true ) && ( scoreIndex == 0 ) )
+                                    {
+                                        <td colspan="3" rowspan="2"><input type="submit" name="action" value="Copy players from Set 1" id="fred"></td>
+                                    }
+                                    else
+                                    {
+                                        <td>@playerError[ scoreIndex ]</td>
+                                    }
+                                }
+                            </tr>
+                        }
+
+                        @* Display the scores and points for each leg *@
+                        <tr>
+                            <td></td>
+                            <td>@setData.TotalScore.Legs[ 0 ]</td>
+                            @if ( matchPlay == true )
+                            {
+                                <td>@setData.TotalScore.Points[ 0 ]</td>
+                            }
+                            <td>@setData.TotalScore.Legs[ 1 ]</td>
+                            @if ( matchPlay == true )
+                            {
+                                <td>@setData.TotalScore.Points[ 1 ]</td>
+                            }
+                            <td>@setData.TotalScore.Legs[ 2 ]</td>
+                            @if ( matchPlay == true )
+                            {
+                                <td>@setData.TotalScore.Points[ 2 ]</td>
+                            }
+                            <td>@setData.TotalScore.Total</td>
+                        </tr>
+                    </table>
+                }
+            }
+
+            <h3>Score</h3>
+            <div>
+                <select id="OurScore" onchange="setOurScore();">
+                    @if ( gameDetails.Us == -1 )
+                    {
+                        <option selected="selected"></option>
+                    }
+                    @for( int possibleScore = 0; possibleScore < 15; possibleScore++ )
+                    {
+                        if ( gameDetails.Us == possibleScore )
+                        {
+                            <option selected="selected">@possibleScore</option>
+                        }
+                        else
+                        {   
+                            <option>@possibleScore</option>
+                        }
+                    }
+                </select>
+                -
+                <select id="TheirScore" onchange="setTheirScore();">
+                    @if ( gameDetails.Them == -1 )
+                    {
+                        <option selected="selected"></option>
+                    }
+                    @for( int possibleScore = 0; possibleScore < 15; possibleScore++ )
+                    {
+                        if ( gameDetails.Them == possibleScore )
+                        {
+                            <option selected="selected">@possibleScore</option>
+                        }
+                        else
+                        {   
+                            <option>@possibleScore</option>
+                        }
+                    }
+                </select>
+            </div>
+
+        </form>
+    }
+    else
+    {
+        // Game is not in progress
+        for ( int index = 1; index < 3; ++index )
+        {
+            GameDetails.SetData setData = gameDetails.Sets[ index - 1 ];
+            if ( setData != null )
+            {
+                if ( matchPlay == false )
+                {
+                    <table>
+                        <tr>
+                            <th>Set @index</th> <th>Leg 1</th> <th>Leg 2</th> <th>Leg 3</th> <th>Total</th>
+                        </tr>
+                        @foreach( GameDetails.Score playerScore in setData.Scores )
+                        {
+                            if ( playerScore.PlayerName != null )
+                            {
+                                <tr>
+                                    <td>@playerScore.PlayerName</td>
+                                    <td>@LegString( playerScore.Legs[ 0 ] )</td>
+                                    <td>@LegString( playerScore.Legs[ 1 ] )</td>
+                                    <td>@LegString( playerScore.Legs[ 2 ] )</td>
+                                    <td>@LegString( playerScore.Total )</td>
+                                </tr>
+                            }
+                        }
+
+                        @* Display the scores and points for each leg *@
+                        <tr>
+                            <td></td>
+                            <td>@setData.TotalScore.Legs[ 0 ]</td>
+                            <td>@setData.TotalScore.Legs[ 1 ]</td>
+                            <td>@setData.TotalScore.Legs[ 2 ]</td>
+                            <td>@setData.TotalScore.Total</td>
+                        </tr>
+                    </table>
+                }
+                else
+                {
+                    <table>
+                        <tr>
+                            <th>Set @index</th> <th>Leg 1</th> <th>Points</th> <th>Leg 2</th> <th>Points</th> <th>Leg 3</th> <th>Points</th> <th>Total</th>
+                        </tr>
+                        @foreach( GameDetails.Score playerScore in setData.Scores )
+                        {
+                            if ( playerScore.PlayerName != null )
+                            {
+                                <tr>
+                                    <td>@playerScore.PlayerName</td>
+                                    <td>@LegString( playerScore.Legs[ 0 ] )</td>
+                                    <td>@PointsString( playerScore.Points[ 0 ] )</td>
+                                    <td>@LegString( playerScore.Legs[ 1 ] )</td>
+                                    <td>@PointsString( playerScore.Points[ 1 ] )</td>
+                                    <td>@LegString( playerScore.Legs[ 2 ] )</td>
+                                    <td>@PointsString( playerScore.Points[ 2 ] )</td>
+                                    <td>@LegString( playerScore.Total )</td>
+                                </tr>
+                            }
+                        }
+                        @* Display the scores and points for each leg *@
+                        <tr>
+                            <td></td>
+                            <td>@setData.TotalScore.Legs[ 0 ]</td>
+                            <td>@setData.TotalScore.Points[ 0 ]</td>
+                            <td>@setData.TotalScore.Legs[ 1 ]</td>
+                            <td>@setData.TotalScore.Points[ 1 ]</td>
+                            <td>@setData.TotalScore.Legs[ 2 ]</td>
+                            <td>@setData.TotalScore.Points[ 2 ]</td>
+                            <td>@setData.TotalScore.Total</td>
+                        </tr>
+                    </table>
+                }
+            }
+        }
+
+        if ( gameDetails.Us != -1 )
+        {
+            <h3>Score</h3>
+            <div>@gameDetails.Us - @gameDetails.Them</div>
+        }
+    }
+
+    if ( gameDetails.Averages != null )
+    {
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Legs</th>
+                <th>Pins</th>
+                <th>Average</th>
+            </tr>
+            @foreach( AverageDetails.Average avgData in gameDetails.Averages.AverageCollection )
+            {
+                <tr>
+                    <td>@db.QueryValue( "SELECT Email FROM UserProfile WHERE UserId=@0", avgData.PlayerId )</td>
+                    <td>@avgData.Legs</td>
+                    <td>@avgData.Pins</td>
+                    <td>@avgData.Avg</td>
+                </tr>
+            }
+        </table>
+    }
+}
+else
+{
+    <h3>No game data available</h3><br>
+}
+
+@if ( ( gameDetails != null ) && ( ( Roles.IsUserInRole( "Admin" ) == true ) || ( Roles.IsUserInRole( "Scorer") == true ) ) ) 
+{
+    <form method="post">
+        @if ( Roles.IsUserInRole( "Admin" ) == true )
+        {
+            if ( gameDetails.SetsAvailable == false )
+            {
+                <input type="submit" name="action" value="Delete game" id="submit" onclick="return confirm( 'Are you sure you want to delete this game?');">
+            }
+            else
+            {
+                <input type="submit" name="action" value="Delete game" id="submit" onclick="return confirm( 'This game contains some data, are you really sure you want to delete this game?');">
+            }
+        }
+
+        @if ( gameDetails.InProgress == true )
+        {
+            <input type="submit" name="action" value="Game finished" id="submit">
+        }
+        else
+        {
+            if ( ( gameDetails.OtherGameInProgress == null ) && ( gameDetails.CanBeEdited == true ) )
+            {
+                <input type="submit" name="action" value="Record scores" id="submit">
+            }
+        }
+    </form>
+}
+

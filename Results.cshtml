@@ -1,0 +1,34 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Results";
+    Database db = Database.Open( "StarterSite" );
+    IEnumerable< dynamic > leagues = db.Query( "SELECT * FROM Competition ORDER BY Id" );
+}
+
+@section featured { 
+<section class="featured">
+    <div class="content-wrapper">
+        <hgroup class="title">
+            <h1>@Page.Title.</h1>
+        </hgroup>
+        <p>
+            Data is available for the following skittles leagues.<br>
+            Click on a league to display further details.
+        </p>
+    </div>
+</section>
+}
+
+<table>
+    @foreach( dynamic league in leagues )
+    {
+        <tr>
+            <td><a href="@Href( "~/Competition", league.Id, league.Name, league.Matchplay, league.Locked )">@league.Name</a></td>
+        </tr>
+    }
+</table>
+
+@if ( Roles.IsUserInRole( "Admin" ) == true ) 
+{
+    <a href="~/AddCompetition" class="btn">Add league</a>
+}

@@ -1,0 +1,87 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+
+    int competitionId = UrlData[ 0 ].AsInt();
+
+    Database db = Database.Open( "StarterSite" );
+    DynamicRecord data = db.QuerySingle( "SELECT * FROM Competition WHERE Id=@0", competitionId );
+
+    // Initialise general page variables
+    string name = ( string )data[ "Name" ];
+    bool matchPlay = ( bool )data[ "Matchplay"];
+    bool locked = ( bool )data[ "Locked"];
+
+    Page.Title = "Edit " + name;
+
+    // Setup validation
+    Validation.RequireField( "name", "You must specify a league name." );
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true ) 
+    {
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true) 
+        {
+            name = Request.Form[ "name" ];
+            matchPlay = Request.Form[ "matchPlay" ].AsBool();
+            locked = Request.Form[ "locked" ].AsBool();
+
+            // Make sure that a league with the same name does not already exist ( ignoring this league of course )
+            if ( db.QueryValue( string.Format( "SELECT * FROM Competition WHERE Name = '{0}' AND Id <> {1}", name, competitionId ) ) != null )
+            {
+                ModelState.AddFormError( "The league name already exists" );
+            }
+            else
+            {
+                // Replace the existing entry with the new name and (possibly) match play value
+                db.Execute( "UPDATE Competition SET Name=@0, Matchplay=@1, Locked=@2 WHERE Id=@3", name, matchPlay, locked, competitionId );
+
+                Response.Redirect( "~/Results" );
+            }
+        }
+    }
+}
+
+@section featured { 
+<section class="featured">
+    <div class="content-wrapper">
+        <hgroup class="title">
+            <h1>@Page.Title.</h1>
+        </hgroup>
+        <p>
+            Use the form below to change the name or match play status of a league.
+        </p>
+    </div>
+</section>
+}
+
+<section>
+
+    <form method="post">
+        @AntiForgery.GetHtml()
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary( "Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Edit league</legend>
+            <ol>
+                <li>
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" value="@name" @Validation.For("name")/>
+                    @* Write any user name validation errors to the page *@
+                    @Html.ValidationMessage("name")
+                </li>
+                <li>
+                    <input type="checkbox" id="matchPlay" name="matchPlay" value="true" checked="@matchPlay" />
+                    <label class="checkbox" for="matchPlay">Match play</label>
+                </li>
+                <li>
+                    <input type="checkbox" id="locked" name="locked" value="true" checked="@locked" />
+                    <label class="checkbox" for="locked">Locked</label>
+                </li>
+            </ol>
+            <input type="submit" value="Edit league" id="submit" />
+        </fieldset>
+    </form>
+
+</section>

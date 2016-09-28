@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>@Page.Title - Oddzes</title>
+        <link href="~/Content/themes/base/jquery.ui.all.css" rel="stylesheet" type="text/css" />
+        <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+        <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+        <script src="~/Scripts/jquery-1.8.2.min.js"></script>
+        <script src="~/Scripts/jquery-ui-1.8.24.js"></script>
+        <script src="~/Scripts/modernizr-2.6.2.js"></script>
+        <meta name="viewport" content="width=device-width" />
+    </head>
+ 
+    @{ 
+        // Force this page to refresh itself on back button so that if a game is deleted in the /Game page
+        // going back to this page will display the updated list
+        // TO DO - check if this should be here or in the /Game page as this does not
+        // always work on mobiles
+        Response.Cache.SetCacheability( HttpCacheability.NoCache );
+        Response.Cache.SetNoStore();
+        Response.Cache.SetExpires( DateTime.MinValue );
+    }
+
+   <body>
+        <header>
+            <div class="content-wrapper">
+                <section class="site-title">
+                    <a href="~/">Oddzes</a>
+                </section>
+                <section id="login">
+                    @if ( WebSecurity.IsAuthenticated == true ) 
+                    {
+                        // On large screen have a more verbose logged on user section. On mobiles replace with a dropdown menu
+                        <div class="non-mobile">
+                            <strong>Hello <a class="email" href="~/Account/Manage" title="Manage">@WebSecurity.CurrentUserName</a></strong>
+                            <a href="~/Account/Logout" class="btn">Log out</a>
+                            @if ( Roles.IsUserInRole( "Admin" ) == true )
+                            {
+                                <a href="~/Account/Register" class="btn">Register</a>
+                                <a href="~/Download" class="btn">Download Db</a>
+                            }
+                        </div>
+                        <div class="mobile dropdown">
+                            <div class="dropbtn" onclick="">@WebSecurity.CurrentUserName</div>
+                            <div class="dropdown-content">
+                                <a href="~/Account/Logout">Log out</a>
+                                <a href="~/Account/Manage">Manage</a>
+                                @if ( Roles.IsUserInRole( "Admin" ) == true )
+                                {
+                                    <a href="~/Account/Register">Register</a>
+                                    <a href="~/Download">Download Db</a>
+                                }
+                            </div>
+                        </div>
+                    } 
+                    else 
+                    {
+                        // Don't show the login button on the login page
+                        if ( Page.Title != "Log in" )
+                        {
+                            <a href="~/Account/Login" class="btn">Log in</a>
+                        }
+                    }
+                </section>
+                <nav style="clear:both">
+                    <ul id="menu">
+                        <li><a href="~/">Home</a></li>
+                        <li><a href="~/Results">Results</a></li>
+                        <li><a href="~/Gallery">Gallery</a></li>
+                        <li><a href="~/Docs">Documents</a></li>
+                        <li><a href="~/Contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+        <div id="body"> 
+            @RenderSection( "featured", required: false )
+            <section class="content-wrapper main-content clear-fix"> 
+                @RenderBody()
+            </section>
+        </div>
+        <footer>
+            <div class="content-wrapper">
+                <div class="float-left">
+                    <p>&copy; @DateTime.Now.Year - Oddzes Skittles</p>
+                </div>
+            </div>
+        </footer>
+        @RenderSection( "Scripts", required: false )
+    </body>
+</html>

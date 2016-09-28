@@ -1,0 +1,24 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Documents";
+}
+
+@section featured { 
+<section class="featured">
+    <div class="content-wrapper">
+        <hgroup class="title">
+            <h1>@Page.Title.</h1>
+        </hgroup>
+        <p>
+            The following documents (mainly rules) are available to view.
+        </p>
+    </div>
+</section>
+}
+
+<ul>
+    <li><a href="@Href( "~/DisplayPage", "MENS MATCH PLAY LEAGUE RULES.htm", "Match play rules" )">Match play rules</a></li>
+    <li><a href="@Href( "~/DisplayPage", "MENS-SKITTLES-LEAGUE-RULES-2016.htm", "League rules" )">League rules</a></li>
+    <li><a href="@Href( "~/DisplayPage", "Mens Skittles Competition Rules.htm", "Competition rules")">Competition rules</a></li>
+    <li><a href="@Href( "~/DisplayPage", "Fixtures 2016-2017.htm", "Fixtures 2016-2017")">Fixtures 2016-2017</a></li>
+</ul>

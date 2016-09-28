@@ -1,0 +1,211 @@
+﻿@functions
+{
+    //
+    // The Averages class contains a set of averages associated with a Game
+    //
+    public class Averages
+    {
+        public Averages()
+        {
+            AverageCollection = new List<Average>();
+        }
+
+        //
+        // Read the contents of a SetData record from the database
+        //
+        public static Averages Deserialise( Database db, int gameId )
+        {
+            Averages returnAverages = new Averages();
+
+            IEnumerable< dynamic > averagesData = db.Query( "SELECT * FROM Average WHERE Game=@0 ORDER BY Avg DESC", gameId );
+            foreach ( dynamic averageData in averagesData )
+            {
+                returnAverages.AverageCollection.Add( Average.Deserialise( averageData ) );
+            }
+
+            return returnAverages;
+        }
+
+        //
+        // Find the set of averages for a specified league before the specified date/late combination
+        //
+        public static Averages PreviousAverages( Database db, int leagueId, DateTime date, bool late )
+        {
+            Averages returnAverages = null;
+
+            // Get the previous games for which average data exists
+            IEnumerable<dynamic> data = db.Query(
+                "SELECT Id FROM Game WHERE ( Competition = @0 ) AND ( (Date < @1) OR ( (Date = @1) AND (Late < @2) ) ) " +
+                "AND Id IN ( SELECT Game FROM Average ) ORDER BY Date, Late",
+                 leagueId, date, late );
+
+            if ( data != null )
+            {
+                // Get the most recent game with averages
+                dynamic mostRecentGame = data.LastOrDefault();
+                if ( mostRecentGame != null )
+                {
+                    returnAverages = Averages.Deserialise( db, mostRecentGame.Id );
+                }
+            }
+
+            return returnAverages;
+        }
+
+        //
+        // Find the last set of averages for a specified league
+        //
+        public static Averages CurrentAverages( Database db, int leagueId )
+        {
+            Averages returnAverages = null;
+
+            // Get the previous games for which average data exists
+            IEnumerable<dynamic> data = db.Query( "SELECT Id FROM Game WHERE ( Competition = @0 ) AND Id IN ( SELECT Game FROM Average ) ORDER BY Date, Late", 
+                leagueId );
+
+            if ( data != null )
+            {
+                // Get the most recent game with averages
+                dynamic mostRecentGame = data.LastOrDefault();
+                if ( mostRecentGame != null )
+                {
+                    returnAverages = Averages.Deserialise( db, mostRecentGame.Id );
+                }
+            }
+
+            return returnAverages;
+        }
+
+        //
+        // Create a set of empty averages based on the current set of players
+        // 
+        public static Averages CreateEmptyAverages( Database db )
+        {
+            Averages createdAverages = new Averages();
+
+            IEnumerable< dynamic >players = db.Query( "SELECT * FROM UserProfile WHERE ( TeamRole <> 'Spare' ) AND ( TeamRole <> 'Retired' )" );
+            foreach ( dynamic player in players )
+            {
+                Average newAverage = new Average();
+                newAverage.PlayerId = player.UserId;
+                createdAverages.AverageCollection.Add( newAverage );
+            }
+
+            return createdAverages;
+        }
+
+        //
+        // Save the average collection and set the game identity
+        //
+        public void SaveAverages( Database db, int gameId )
+        {
+            foreach ( Average avg in AverageCollection )
+            {
+                avg.SaveAverage( db, gameId );
+            }
+        }
+
+        public List<Average> AverageCollection
+        {
+            get;
+            set;
+        }
+
+    }
+
+    //
+    // The Average class contains the average pins per leg values for a particular player at the end of a particular game
+    //
+    public class Average
+    {
+        public Average()
+        {
+            Legs = 0;
+            Pins = 0;
+            Avg = 0;
+        }
+
+        //
+        // Read the contents of an Average record from a row of data
+        //
+        public static Average Deserialise( dynamic row )
+        {
+            Average returnAverage = new Average();
+
+            returnAverage.Identity = row.Id;
+            returnAverage.PlayerId = row.Player;
+            returnAverage.Legs = row.Legs;
+            returnAverage.Pins = row.Pins;
+            returnAverage.GameId = row.Game;
+            returnAverage.Avg = row.Avg;
+
+            return returnAverage;
+        }
+
+        //
+        // Save this average in the database with the specified game id
+        //
+        public void SaveAverage( Database db, int gameId )
+        {
+            GameId = gameId;
+
+            db.Execute( "INSERT INTO Average (Player, Legs, Pins, Game, Avg) VALUES (@0, @1, @2, @3, @4)", PlayerId, Legs, Pins, GameId, Avg );
+        }
+
+        public void UpdateScore( Database db, int previousScore, int newScore )
+        {
+            if ( previousScore == -1 )
+            {
+                // Add 1 to the legs and add the new score to the total pins
+                Legs++;
+                Pins += newScore;
+            }
+            else
+            {
+                // Leave the leg count as it is and add to the total pins the difference between the old score and the new score
+                Pins += newScore - previousScore;
+            }
+
+            Avg = ( decimal )Pins / ( decimal )Legs;
+
+            db.Execute( "UPDATE Average SET Legs=@0, Pins=@1, Avg=@2 WHERE Id=@3", Legs, Pins, Avg, Identity );
+        }
+
+        public int Identity
+        {
+            get;
+            set;
+        }
+
+        public int PlayerId
+        {
+            get;
+            set;
+        }
+
+        public int Legs
+        {
+            get;
+            set;
+        }
+
+        public int Pins
+        {
+            get;
+            set;
+        }
+
+        public int GameId
+        {
+            get;
+            set;
+        }
+
+        public decimal Avg
+        {
+            get;
+            set;
+        }
+    }
+
+}

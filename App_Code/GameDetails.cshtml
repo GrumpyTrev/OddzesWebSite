@@ -1,0 +1,528 @@
+﻿@functions
+{
+    //
+    // The Game class contains the details of a skittles game read from the database
+    //
+    public class Game
+    {
+        public Game()
+        {
+            Sets = new GameDetails.SetData[ 2 ];
+        }
+
+        //
+        // Read the contents of a SetData record from the database
+        //
+        public static Game Deserialise( Database db, int gameId )
+        {
+            Game returnGame = null;
+
+            dynamic gameDetails = db.QuerySingle( "SELECT * FROM Game WHERE Id=@0", gameId );
+
+            if ( gameDetails != null )
+            {
+                returnGame = new Game();
+
+                // Check for any available data
+                returnGame.SetsAvailable = ( ( gameDetails.Set1 != null ) || ( gameDetails.Set2 != null ) );
+
+                if ( returnGame.SetsAvailable == true )
+                {
+                    // There may be partial data available so check for each set individually
+                    if ( gameDetails.Set1 != null )
+                    {
+                        returnGame.Sets[ 0 ] = GameDetails.SetData.Deserialise( db.QuerySingle( "SELECT * FROM Sets WHERE Id=@0", gameDetails.Set1 ), db );
+                    }
+
+                    if ( gameDetails.Set2 != null )
+                    {
+                        returnGame.Sets[ 1 ] = GameDetails.SetData.Deserialise( db.QuerySingle( "SELECT * FROM Sets WHERE Id=@0", gameDetails.Set2 ), db );
+                    }
+                }
+
+                // Extract some commonly used fields
+                returnGame.Opponents = gameDetails.Opponents;
+                returnGame.Date = gameDetails.Date;
+                returnGame.InProgress = gameDetails.InProgress;
+                returnGame.Identity = gameId;
+                returnGame.Competition = gameDetails.Competition;
+                returnGame.Late = gameDetails.Late;
+                returnGame.Us = gameDetails.Us;
+                returnGame.Them = gameDetails.Them;
+                returnGame.Complete = gameDetails.Complete;
+
+                // Get the averages for this game
+                returnGame.Averages = AverageDetails.Averages.Deserialise( db, gameId );
+
+                // Check if any other game is in progress
+                IEnumerable< dynamic > gamesInProgress = db.Query( "SELECT * FROM Game WHERE (InProgress=1)" );
+                if ( gamesInProgress != null )
+                {
+                    // Get the id of the first game - there should only be one
+                    returnGame.OtherGameInProgress = gamesInProgress.FirstOrDefault();
+                }
+
+                // Can this game be edited 
+                // It can be edited if it is complete and the next game has not been started yet.
+                // Or this game is not complete and the previous game was complete
+                returnGame.CanBeEdited = true;
+
+                if ( returnGame.Complete == true )
+                {
+                    // Find the next game
+                    IEnumerable<dynamic> nextGames = db.Query(
+                        "SELECT * FROM Game WHERE ( (Date > @0) OR ( (Date = @0) AND (Late > @1) ) ) ORDER BY Date, Late", returnGame.Date, returnGame.Late );
+                    if ( nextGames != null )
+                    {
+                        // Get the most recent game
+                        dynamic nextGame = nextGames.FirstOrDefault();
+                        if ( nextGame != null )
+                        {
+                            returnGame.CanBeEdited = ( nextGame.Set1 == null );
+                        }
+                    }
+                }
+                else
+                {
+                    // Find the most recent game
+                    IEnumerable<dynamic> recentGames = db.Query(
+                        "SELECT * FROM Game WHERE ( (Date < @0) OR ( (Date = @0) AND (Late < @1) ) ) ORDER BY Date, Late", returnGame.Date, returnGame.Late );
+                    if ( recentGames != null )
+                    {
+                        // Get the most recent game
+                        dynamic mostRecentGame = recentGames.LastOrDefault();
+                        if ( mostRecentGame != null )
+                        {
+                            returnGame.CanBeEdited = ( mostRecentGame.Complete == true );
+                        }
+                    }
+                }
+            }
+
+            return returnGame;
+        }
+
+        //
+        // Create the Set and Averages records for this game if they don't already exists
+        //
+        public void InitialiseGame( Database db )
+        {
+            // Use the presense of the first Set record to check
+            if ( Sets[ 0 ] == null )
+            {
+                Sets[ 0 ] = new SetData();
+                Sets[ 0 ].Serialise( db );
+                Sets[ 1 ] = new SetData();
+                Sets[ 1 ].Serialise( db );
+
+                db.Execute( "UPDATE Game SET Set1=@0, Set2=@1 WHERE Id=@2", Sets[ 0 ].Identity, Sets[ 1 ].Identity, Identity );
+
+                // Find the most recent game/set of any kind that has a full set of players in order to pre-populate the player list
+                // for the first set
+                IEnumerable< dynamic > recentGames = db.Query(
+                    "SELECT * FROM Game WHERE ( (Date < @0) OR ( (Date = @0) AND (Late < @1) ) ) AND ( Set2 IS NOT NULL ) ORDER BY Date, Late", Date, Late );
+                if ( recentGames != null )
+                {
+                    // Get the most recent game
+                    dynamic mostRecentGame = recentGames.LastOrDefault();
+                    if ( mostRecentGame != null )
+                    {
+                        GameDetails.SetData set2 = GameDetails.SetData.Deserialise( db.QuerySingle( "SELECT * FROM Sets WHERE Id=@0", mostRecentGame.Set2 ), db );
+
+                        Sets[ 0 ].PopulatePlayersFrom( set2, db );
+                    }
+                }
+
+                // Create a set of averages for this game based on the previous game
+                AverageDetails.Averages gameAverages = AverageDetails.Averages.PreviousAverages( db, Competition, Date, Late );
+                if ( gameAverages == null )
+                {
+                    // Create an empty set of averages based on the current set of players
+                    gameAverages = AverageDetails.Averages.CreateEmptyAverages( db );
+                }
+
+                // Save these averages to the database and associate them with the current game
+                gameAverages.SaveAverages( db, Identity );
+            }
+        }
+
+        //
+        // Copy the players from set 1 to set 2
+        //
+        public void CopyPlayersFromSet1( Database db )
+        {
+            for ( int scoreIndex = 0; scoreIndex < 6; scoreIndex++ )
+            {
+                Sets[ 1 ].SetPlayerName( db, scoreIndex, Sets[ 0 ].Scores[ scoreIndex ].PlayerName );
+            }
+        }
+
+        public void SetPlayerName( Database db, int set, int score, string playerName )
+        {
+            Sets[ set ].SetPlayerName( db, score, playerName);
+        }
+
+        public void SetScore( Database db, int set, int score, int leg, int pins )
+        {
+            Sets[ set ].SetScore( db, score, leg, pins );
+        }
+
+        public void SetPoints( Database db, int set, int score, int leg, decimal points )
+        {
+            Sets[ set ].SetPoints( db, score, leg, points );
+        }
+
+        public void SetUsScore( Database db, int score )
+        {
+            db.Execute( "UPDATE Game SET Us=@0 WHERE Id=@1", score, Identity );
+        }
+
+        public void SetThemScore( Database db, int score )
+        {
+            db.Execute( "UPDATE Game SET Them=@0 WHERE Id=@1", score, Identity );
+        }
+
+        public bool SetsAvailable
+        {
+            get;
+            set;
+        }
+
+        public GameDetails.SetData[] Sets
+        {
+            get;
+            set;
+        }
+
+        public AverageDetails.Averages Averages
+        {
+            get;
+            set;
+        }
+
+        public dynamic OtherGameInProgress
+        {
+            get;
+            set;
+        }
+
+        public string Opponents
+        {
+            get;
+            set;
+        }
+
+        public DateTime Date
+        {
+            get;
+            set;
+        }
+
+        public bool InProgress
+        {
+            get;
+            set;
+        }
+
+        public int Identity
+        {
+            get;
+            set;
+        }
+
+        public int Competition
+        {
+            get;
+            set;
+        }
+
+        public bool Late
+        {
+            get;
+            set;
+        }
+
+        public int Us
+        {
+            get;
+            set;
+        }
+
+        public int Them
+        {
+            get;
+            set;
+        }
+
+        public bool Complete
+        {
+            get;
+            set;
+        }
+
+        public bool CanBeEdited
+        {
+            get;
+            set;
+        }
+    }
+
+    //
+    // The SetData class contains 6 Score records, one for each player
+    //
+    public class SetData
+    {
+        public SetData()
+        {
+            Scores = new Score[ 6 ];
+            TotalScore = new Score();
+        }
+
+        //
+        // Read the contents of a SetData record from the database
+        //
+        public static SetData Deserialise( DynamicRecord dbData, Database db )
+        {
+            SetData returnData = new SetData();
+
+            // Keep track of whether or not all the player data is empty
+            returnData.PlayersNotSet = true;
+
+            for ( int index = 0; index < 6; ++index )
+            {
+                DynamicRecord scoreDetails = db.QuerySingle( "SELECT * FROM Score WHERE Id=@0", dbData[ "Scores" + ( index + 1 ) ] );
+
+                Score theScore = Score.Deserialise( scoreDetails, db );
+                returnData.PlayersNotSet = ( returnData.PlayersNotSet && ( theScore.PlayerId == -1 ) );
+
+                returnData.Scores[ index ] = theScore;
+            }
+
+            // Calculate the total scores for each leg
+            returnData.TotalScore.Total = 0;
+            for ( int legIndex = 0; legIndex < 3; legIndex++ )
+            {
+                returnData.TotalScore.Legs[ legIndex ] = 0;
+                returnData.TotalScore.Points[ legIndex ] = 0;
+
+                for ( int playerIndex = 0; playerIndex < 6; playerIndex++ )
+                {
+                    int playerScore = returnData.Scores[ playerIndex ].Legs[ legIndex ];
+                    if ( playerScore != -1 )
+                    {
+                        returnData.TotalScore.Legs[ legIndex ] += playerScore;
+                        returnData.TotalScore.Total += playerScore;
+                    }
+
+                    returnData.TotalScore.Points[ legIndex ] += returnData.Scores[ playerIndex ].Points[ legIndex ];
+                }
+            }
+
+            return returnData;
+        }
+
+        //
+        // Store this SetData record in the database
+        //
+        public void Serialise( Database db )
+        {
+            // If the Score records have not been created do that now
+            if ( Scores[ 0 ] == null )
+            {
+                for ( int index = 0; index < 6; ++index )
+                {
+                    Scores[ index ] = new Score();
+                }
+            }
+
+            // Store the Scores
+            for ( int index = 0; index < 6; ++index )
+            {
+                Scores[ index ].Serialise( db );
+            }
+
+            // Store the score ids
+            db.Execute( "INSERT INTO Sets (Scores1, Scores2, Scores3, Scores4, Scores5, Scores6) VALUES (@0, @1, @2, @3, @4, @5)",
+                Scores[ 0 ].Identity, Scores[ 1 ].Identity, Scores[ 2 ].Identity, Scores[ 3 ].Identity, Scores[ 4 ].Identity, Scores[ 5 ].Identity );
+
+            // Now get back the identifier for this record
+            Identity = ( int )db.QueryValue( "SELECT @@IDENTITY" );
+        }
+
+        public void SetPlayerName( Database db, int score, string playerName )
+        {
+            Scores[ score ].SetPlayerName( db, playerName );
+        }
+
+        public void SetScore( Database db, int score, int leg, int pins )
+        {
+            Scores[ score ].SetScore( db, leg, pins );
+        }
+
+        public void SetPoints( Database db, int score, int leg, decimal points )
+        {
+            Scores[ score ].SetPoints( db, leg, points );
+        }
+
+        //
+        // Use an old set to populate the players for the new set. Make sure that the player ids are still current
+        //
+        public void PopulatePlayersFrom( SetData oldSet, Database db )
+        {
+            for ( int index = 0; index < 6; ++index )
+            {
+                if ( db.QueryValue( "SELECT Email FROM UserProfile WHERE UserId=@0", oldSet.Scores[ index ].PlayerId ) != null )
+                {
+                    Scores[ index ].SetPlayerId( db, oldSet.Scores[ index ].PlayerId );
+                }
+            }
+        }
+
+        //
+        // The Scores associated with this set
+        // 
+        public Score[] Scores
+        {
+            get;
+            set;
+        }
+
+        public int Identity
+        {
+            get;
+            set;
+        }
+
+        public bool PlayersNotSet
+        {
+            get;
+            set;
+        }
+
+        public Score TotalScore
+        {
+            get;
+            set;
+        }
+    }
+
+    //
+    // The Score class contains the pins and match play points for 3 legs
+    //
+    public class Score
+    {
+        public Score()
+        {
+            Legs = new int[ 3 ] { -1, -1, -1 };
+            Points = new decimal[ 3 ];
+            PlayerId = -1;
+        }
+
+        //
+        // Read the contents of a Score record from the database
+        //
+        public static Score Deserialise( DynamicRecord dbData, Database db )
+        {
+            Score returnScore = new Score();
+
+            returnScore.PlayerId = ( int )dbData[ "Player" ];
+            returnScore.PlayerName = db.QueryValue( "SELECT Email FROM UserProfile WHERE UserId=@0", returnScore.PlayerId );
+            returnScore.Identity = ( int )dbData[ "Id" ];
+
+            returnScore.Legs[ 0 ] = ( int )dbData[ "Leg1" ];
+            returnScore.Legs[ 1 ] = ( int )dbData[ "Leg2" ];
+            returnScore.Legs[ 2 ] = ( int )dbData[ "Leg3" ];
+
+            returnScore.Points[ 0 ] = ( decimal )dbData[ "Points1" ];
+            returnScore.Points[ 1 ] = ( decimal )dbData[ "Points2" ];
+            returnScore.Points[ 2 ] = ( decimal )dbData[ "Points3" ];
+
+            if ( ( returnScore.Legs[ 0 ] == -1 ) && ( returnScore.Legs[ 1 ] == -1 ) &&  ( returnScore.Legs[ 2 ] == -1 ) )
+            {
+                returnScore.Total = -1;
+            }
+            else
+            {
+                returnScore.Total = ( ( returnScore.Legs[ 0 ] != -1 ) ?  returnScore.Legs[ 0 ] : 0 ) +
+                    ( ( returnScore.Legs[ 1 ] != -1 ) ?  returnScore.Legs[ 1 ] : 0 ) + ( ( returnScore.Legs[ 2 ] != -1 ) ?  returnScore.Legs[ 2 ] : 0 );
+            }
+
+            return returnScore;
+        }
+
+        //
+        // Store this Score record int the database
+        //
+        public void Serialise( Database db )
+        {
+            // Store the record
+            db.Execute( "INSERT INTO Score (Player, Leg1, Leg2, Leg3, Points1, Points2, Points3) VALUES (@0, @1, @2, @3, @4, @5, @6)",
+                PlayerId, Legs[ 0 ], Legs[ 1 ], Legs[ 2 ], Points[ 0 ], Points[ 1 ], Points[ 2 ] );
+
+            // Now get back the identifier for this record
+            Identity = ( int )db.QueryValue( "SELECT @@IDENTITY" );
+        }
+
+        public void SetPlayerName( Database db, string playerName )
+        {
+            PlayerName = playerName;
+            PlayerId = ( int )db.QueryValue( "SELECT UserId FROM UserProfile WHERE Email=@0", playerName );
+
+            db.Execute( "UPDATE Score SET Player=@0 WHERE Id=@1", PlayerId, Identity );
+        }
+
+        public void SetPlayerId( Database db, int playerIdentity )
+        {
+            PlayerId = playerIdentity;
+            PlayerName = ( string )db.QueryValue( "SELECT Email FROM UserProfile WHERE UserId=@0", playerIdentity );
+
+            db.Execute( "UPDATE Score SET Player=@0 WHERE Id=@1", PlayerId, Identity );
+        }
+
+        public void SetScore( Database db, int leg, int pins )
+        {
+            db.Execute( string.Format( "UPDATE Score SET Leg{0}={1} WHERE Id={2}", leg + 1, pins, Identity ) );
+        }
+
+        public void SetPoints( Database db, int leg, decimal points )
+        {
+            db.Execute( string.Format( "UPDATE Score SET Points{0}={1} WHERE Id={2}", leg + 1, points, Identity ) );
+        }
+
+        public int PlayerId
+        {
+            get;
+            set;
+        }
+
+        public string PlayerName
+        {
+            get;
+            set;
+        }
+
+        public int[] Legs
+        {
+            get;
+            set;
+        }
+
+        public decimal[] Points
+        {
+            get;
+            set;
+        }
+
+        public int Total
+        {
+            get;
+            set;
+        }
+
+        public int Identity
+        {
+            get;
+            set;
+        }
+    }
+}

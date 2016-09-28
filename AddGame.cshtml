@@ -1,0 +1,102 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Add Game";
+
+    int competitionId = UrlData[ 0 ].AsInt();
+    string competitionName = UrlData[ 1 ];
+    bool matchPlay = UrlData[ 2 ].AsBool();
+
+    // Initialise general page variables
+    string opponents = "";
+    string dateString = "";
+    bool late = false;
+
+    Database db = Database.Open( "StarterSite" );
+
+    // Setup validation
+    Validation.RequireField( "opponents", "You must specify an opponent." );
+    Validation.RequireField( "date", "You must specify a date." );
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true ) 
+    {
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true) 
+        {
+            opponents = Request.Form[ "opponents" ];
+            dateString = Request.Form[ "date" ];
+
+            // Convert this string in dd/mm/yy format into a datetime to get around mobile/pc local differences
+            DateTime date = DateTime.ParseExact( dateString, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture );
+
+            late = Request.Form[ "late" ].AsBool();
+
+            // Make sure that a game with the same opponents does not already exist.
+            // This assumes that we don't play anyone twice. Otherwise the check will have to be for opponents and date
+            if ( db.QueryValue( string.Format( "SELECT * FROM Game WHERE Competition = '{0}' AND Opponents = '{1}'", competitionId, opponents ) ) != null )
+            {
+                ModelState.AddFormError( "A game with the same opponents already exists" );
+            }
+            else
+            {
+                // Add a new entry and return to the competition page
+                db.Execute( "INSERT INTO Game (Opponents, Date, Competition, Late, Complete) VALUES (@0, @1, @2, @3, @4)", opponents, date, competitionId, 
+                    late, false );
+                Response.Redirect( Href( "~/Competition", competitionId, competitionName, matchPlay ) );
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+    $(document).ready(function()
+    {
+        $.datepicker.setDefaults( $.extend( {'dateFormat':'dd/mm/yy'}, $.datepicker.regional['uk'] ) );
+        $("#date").datepicker();
+    });
+</script>
+
+@section featured { 
+<section class="featured">
+    <div class="content-wrapper">
+        <hgroup class="title">
+            <h1>@Page.Title.</h1>
+        </hgroup>
+        <p>
+            Use the form below to add a new Game to the Competition. The new Game will be appended to
+            the end of the Competition. <br>
+            To change an existing Game first select the Game from the Competition page.
+        </p>
+    </div>
+</section>
+}
+
+<section>
+
+    <form method="post">
+        @AntiForgery.GetHtml()
+        @Html.ValidationSummary( "Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null )
+
+        <fieldset>
+            <legend>Add new Game</legend>
+            <ol>
+                <li>
+                    <input type="text" id="opponents" name="opponents" value="@opponents" @Validation.For( "opponents" )/>
+                    <label for="opponents" >Opponents</label>
+                    @Html.ValidationMessage( "opponents" )
+                </li>
+                <li>
+                    @* Make the date field read only so that on mobiles the text input widget is not displayed *@
+                    <input type="text" id="date" name="date" value="@dateString" readonly="true"/>
+                    <label for="date">Date</label>
+                    @Html.ValidationMessage( "date" )
+                </li>
+                <li>
+                    <input type="checkbox" id="late" name="late" value="false" checked="@late" />
+                    <label class="checkbox" for="late">Late</label>
+                </li>
+            </ol>
+            <input type="submit" value="Add Game" id="submit" />
+        </fieldset>
+    </form>
+</section>
