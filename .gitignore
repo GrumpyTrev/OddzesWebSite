@@ -78,7 +78,9 @@ ipch/
 *.ncb
 *.opendb
 *.opensdf
-*.sdf
+
+# This is also SQL CE files so comment out *.sdf
+
 *.cachefile
 *.VC.db
 
