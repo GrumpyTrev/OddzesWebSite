@@ -1,8 +1,14 @@
 ﻿@{
     Layout = "~/_SiteLayout.cshtml";
-    var fileName = Server.MapPath( "~/App_Data/" + UrlData[ 0 ] );
-    var readableName = UrlData[ 1 ];
-    Page.Title = readableName;
+
+    int fileId = UrlData[ 0 ].AsInt();
+
+    Database db = Database.Open( "StarterSite" );
+    dynamic document = db.QuerySingle( "SELECT * FROM DocumentStorage WHERE Id=@0", fileId );
+
+    string content = System.Text.Encoding.Unicode.GetString( ( byte[] )document.Content );
+
+    Page.Title = UrlData[ 1 ];
 }
 
 @section featured { 
@@ -15,7 +21,7 @@
 </section>
 }
 
-@Html.Raw(File.ReadAllText( fileName ))
+@Html.Raw( content );
 
 
 

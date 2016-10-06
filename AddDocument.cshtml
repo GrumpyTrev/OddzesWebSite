@@ -1,0 +1,112 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Add Document";
+
+    // Initialise general page variables
+    string title = "";
+    string fakeFileName = "";
+    string tag = "";
+
+    // Setup validation
+    Validation.RequireField( "title", "You must specify a document title" );
+    Validation.RequireField( "fakeFileName", "You must specify a file name" );
+
+    if ( IsPost == true )
+    {
+        title = Request.Form[ "title" ];
+        fakeFileName = Request.Form[ "fakeFileName" ];
+        tag = Request.Form[ "tag" ];
+
+        if ( Validation.IsValid() == true )
+        {
+            // Check whether or not the title already exists
+            Database db = Database.Open( "StarterSite" );
+
+            // Make sure that a competition with the same name does not already exist
+            if ( db.QueryValue( string.Format( "SELECT * FROM Documents WHERE Title = '{0}'", title ) ) != null )
+            {
+                ModelState.AddFormError( "A document with the specified title already exists" );
+            }
+            else
+            {
+                HttpPostedFileBase uploadedFile = Request.Files[ 0 ];
+
+                // Load the file into a byte array
+                int fileLength = uploadedFile.ContentLength;
+                byte[] fileContent = new byte[ fileLength ];
+                uploadedFile.InputStream.Read( fileContent, 0, fileLength );
+
+                // Add an entry for this document to the documents table
+                db.Execute( "INSERT INTO Documents (Title, Tag) VALUES (@0, @1)", title, tag );
+
+                // Store the actual content in the DocumentStorage table with the key from the Document table entry just added
+                int identity = ( int )db.GetLastInsertId();
+                db.Execute( "INSERT INTO DocumentStorage (Id, Content) VALUES (@0, @1)", identity, fileContent );
+
+                Response.Redirect( "~/Docs" );
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+    $( function()
+    {
+        $( "#fakeUploadButton" ).click( function() 
+        { 
+            $( "#File" ).click();
+        } );
+
+        $("#File").bind('change', function () {
+            $( "#fakeFileName" ).val( this.value );
+        } );
+    } );
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            <p>
+                Use the form below to add a new document to the database. 
+            </p>
+        </div>
+    </section>
+}
+
+<section>
+    <form method="post" name="form1" enctype="multipart/form-data">
+
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary( "Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null )
+
+        <fieldset>
+            <legend>Add new league</legend>
+            <ol>
+                <li>
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" value="@title" @Validation.For( "title" ) />
+                    @Html.ValidationMessage( "title" )
+                </li>
+                <li>
+                    <label for="tag">Tag</label>
+                    <input type="text" id="tag" name="tag" value="@tag" />
+                </li>
+
+                <li>
+                    <label for="fakeFileName">File</label>
+                    <input type="text" id="fakeFileName" name="fakeFileName" readonly="readonly" value="@fakeFileName" @Validation.For( "fakeFileName" ) />
+
+                    <input id="File" name="File" type="file" value="" style="display:none" />
+                    <input class="btn" id="fakeUploadButton" type="button" value="Browse" />
+
+                    @Html.ValidationMessage( "fakeFileName" )
+                </li>
+            </ol>
+            <input type="submit" value="Add document" id="submit" />
+
+       </fieldset>
+    </form>
+</section>

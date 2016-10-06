@@ -1,6 +1,8 @@
 ﻿@{
     Layout = "~/_SiteLayout.cshtml";
     Page.Title = "Documents";
+    Database db = Database.Open( "StarterSite" );
+    IEnumerable<dynamic> documents = db.Query( "SELECT * FROM Documents ORDER BY Id" );
 }
 
 @section featured { 
@@ -16,9 +18,16 @@
 </section>
 }
 
-<ul>
-    <li><a href="@Href( "~/DisplayPage", "MENS MATCH PLAY LEAGUE RULES.htm", "Match play rules" )">Match play rules</a></li>
-    <li><a href="@Href( "~/DisplayPage", "MENS-SKITTLES-LEAGUE-RULES-2016.htm", "League rules" )">League rules</a></li>
-    <li><a href="@Href( "~/DisplayPage", "Mens Skittles Competition Rules.htm", "Competition rules")">Competition rules</a></li>
-    <li><a href="@Href( "~/DisplayPage", "Fixtures 2016-2017.htm", "Fixtures 2016-2017")">Fixtures 2016-2017</a></li>
-</ul>
+<table>
+    @foreach ( dynamic document in documents )
+    {
+        <tr>
+            <td><a href="@Href( "~/DisplayPage", document.Id, document.Title )">@document.Title</a></td>
+        </tr>
+    }
+</table>
+
+@if ( Roles.IsUserInRole( "Admin" ) == true )
+{
+    <a href="~/AddDocument" class="btn">Add document</a>
+}
