@@ -3,6 +3,37 @@
     Page.Title = "Documents";
     Database db = Database.Open( "StarterSite" );
     IEnumerable<dynamic> documents = db.Query( "SELECT * FROM Documents ORDER BY Id" );
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        // Check for 'action' values first
+        if ( Request[ "deleteButton" ] != null )
+        {
+            // Determine which documents have been selected and delete them
+
+            // Put the Id of the documents into an array
+            int[] indexes = new int[ documents.Count() ];
+            int documentIndex = 0;
+            foreach ( dynamic document in documents )
+            {
+                indexes[ documentIndex++ ] = document.Id;
+            }
+
+            // Extract the selected indexes from the request
+            foreach ( string selection in Request[ "selected" ].Split( ',' ) )
+            {
+                documentIndex = indexes[ selection.AsInt() ];
+
+                // Delete the content first and then the index
+                db.Execute( "DELETE FROM DocumentStorage WHERE Id=@0", documentIndex );
+                db.Execute( "DELETE FROM Documents WHERE Id=@0", documentIndex );
+            }
+
+            Response.Redirect( Request.RawUrl );
+
+        }
+    }
 }
 
 @section featured { 
@@ -18,16 +49,85 @@
 </section>
 }
 
-<table>
-    @foreach ( dynamic document in documents )
+<script type="text/javascript">
+    function DocSelected()
     {
-        <tr>
-            <td><a href="@Href( "~/DisplayPage", document.Id, document.Title )">@document.Title</a></td>
-        </tr>
-    }
-</table>
+        var selected = false;
 
-@if ( Roles.IsUserInRole( "Admin" ) == true )
-{
-    <a href="~/AddDocument" class="btn">Add document</a>
-}
+        for ( var i = 0; i < document.docuementForm.selected.length; i++ )
+        {
+            if ( document.docuementForm.selected[i].checked == true )
+            {
+                selected = true;
+            }
+        }
+
+        if ( selected == true )
+        {
+            document.docuementForm.deleteButton.style.visibility = "visible";
+        }
+        else
+        {
+            document.docuementForm.deleteButton.style.visibility = "hidden";
+        }
+    }
+
+    function CountSelectedDocuments()
+    {
+        var selectedDocuments = 0;
+
+        for (var i = 0; i < document.docuementForm.selected.length; i++) {
+            if (document.docuementForm.selected[i].checked == true) {
+                selectedDocuments += 1;
+            }
+        }
+
+        return selectedDocuments;
+    }
+
+    function DeleteConfirmation()
+    {
+        var confirmationString = "";
+        var selectedDocuments = CountSelectedDocuments();
+
+        if (selectedDocuments == 1)
+        {
+            confirmationString = "Do you really want to delete this document?";
+        }
+        else if (selectedDocuments > 1)
+        {
+            confirmationString = "Do you really want to delete these documents?";
+        }
+
+        return confirmationString;
+    }
+
+</script>
+<form name="docuementForm" method="post">
+    <table>
+        @{  int index = 0;
+
+            foreach ( dynamic document in documents )
+            {
+                <tr>
+                    <td>
+                        @if ( Roles.IsUserInRole( "Admin" ) == true )
+                        {
+                            <input type=checkbox name=selected value="@index" onchange="DocSelected();">
+                        }
+                        <a href="@Href( "~/DisplayPage", document.Id, document.Title )">@document.Title</a>
+                    </td>
+                </tr>
+
+                index++;
+            }
+        }
+
+    </table>
+    
+    @if ( Roles.IsUserInRole( "Admin" ) == true )
+    {
+        <a href="~/AddDocument" class="btn">Add document</a>
+        <input type="submit" value="Delete document" id="submit" class="hiddenBtn" name="deleteButton" onclick="return confirm( DeleteConfirmation() );"/>
+    }
+</form>

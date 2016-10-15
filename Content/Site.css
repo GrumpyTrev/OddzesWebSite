@@ -110,6 +110,10 @@ h5, h6 {
     border-color: #46b8da;
 }
 
+.hiddenBtn {
+    visibility: hidden;
+}
+
 input#submit
 {
     display: inline-block;
