@@ -669,6 +669,9 @@ th {
     padding-left: 0;
 }
 
+.thNotBold {
+    font-size: 1.0em;
+}
     th a {
         display: block;
         position: relative;
@@ -709,6 +712,10 @@ td {
     padding: 0.25em 2em 0.25em 0em;
     border: 0 none;
     white-space: nowrap;
+}
+
+.tdRed {
+    background-color: orange;
 }
 
 .col-1 {

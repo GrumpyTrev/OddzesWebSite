@@ -507,6 +507,24 @@
             GameDetails.SetData setData = gameDetails.Sets[ index - 1 ];
             if ( setData != null )
             {
+                // Work out which player has the lowest score in this set - to be coloured 'red'
+                int lowestScore = 999;
+                List<string> lowestScorePlayers = new List<string>();
+
+                foreach ( GameDetails.Score playerScore in setData.Scores )
+                {
+                    if ( playerScore.Total < lowestScore )
+                    {
+                        lowestScorePlayers.Clear();
+                        lowestScore = playerScore.Total;
+                        lowestScorePlayers.Add( playerScore.PlayerName );
+                    }
+                    else if ( playerScore.Total == lowestScore )
+                    {
+                        lowestScorePlayers.Add( playerScore.PlayerName );
+                    }
+                }
+
                 if ( matchPlay == false )
                 {
                     <table>
@@ -522,7 +540,14 @@
                                     <td>@LegString( playerScore.Legs[ 0 ] )</td>
                                     <td>@LegString( playerScore.Legs[ 1 ] )</td>
                                     <td>@LegString( playerScore.Legs[ 2 ] )</td>
-                                    <td>@LegString( playerScore.Total )</td>
+                                    @if ( lowestScorePlayers.Contains( playerScore.PlayerName ) == true )
+                                    {
+                                        <td class="tdRed">@LegString( playerScore.Total )</td>
+                                    }
+                                    else
+                                    {
+                                        <td>@LegString( playerScore.Total )</td>
+                                    }
                                 </tr>
                             }
                         }
@@ -555,7 +580,14 @@
                                     <td>@PointsString( playerScore.Points[ 1 ] )</td>
                                     <td>@LegString( playerScore.Legs[ 2 ] )</td>
                                     <td>@PointsString( playerScore.Points[ 2 ] )</td>
-                                    <td>@LegString( playerScore.Total )</td>
+                                    @if ( lowestScorePlayers.Contains( playerScore.PlayerName ) == true )
+                                    {
+                                        <td class="tdRed">@LegString( playerScore.Total )</td>
+                                    }
+                                    else
+                                    {
+                                        <td>@LegString( playerScore.Total )</td>
+                                    }
                                 </tr>
                             }
                         }
