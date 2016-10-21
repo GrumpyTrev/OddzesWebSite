@@ -2,51 +2,77 @@
     Layout = "~/_SiteLayout.cshtml";
     Page.Title = "Home";
     Database db = Database.Open( "StarterSite" );
-    IEnumerable< dynamic > users = db.Query( "SELECT * FROM UserProfile ORDER BY Email" );
+    IEnumerable<dynamic> users = db.Query( "SELECT * FROM UserProfile ORDER BY Email" );
 
-    // Determine when the next game is.
+    // Determine when the next few games are.
     IEnumerable<dynamic> games = db.Query( "SELECT * FROM Game WHERE Date >= @0 ORDER BY Date", DateTime.Now.Date );
-    dynamic nextGame = games.FirstOrDefault();
-
-    // Need to access the league for this game so that the matchplay flag can be accessed
-    dynamic nextGameLeague = null;
-    if ( nextGame != null )
-    {
-        nextGameLeague = db.QuerySingle( "SELECT * FROM Competition WHERE Id = @0", nextGame.Competition );
-    }
 
     // Find the current fixtures
     dynamic currentFixtures = db.QuerySingle( "SELECT * FROM Documents WHERE Tag = 'Fixtures' " );
+
+    // Get the last set of averages
+    AverageDetails.Averages lastAverages = AverageDetails.Averages.PreviousAverages( db );
+
+    // Get the name of league associated with these averages
+    string averagesLeagueName = "";
+    if ( lastAverages != null )
+    {
+        averagesLeagueName = ( string )db.QueryValue( "SELECT Name FROM Competition WHERE Id IN ( SELECT Competition FROM Game WHERE id=@0 )",
+            lastAverages.AverageCollection[ 0 ].GameId );
+    }
 }
 
+@functions
+{
+    //
+    // String representation of a leg score
+    //
+    string GameDateString( DateTime gameDate, bool late )
+    {
+        int gameDay = gameDate.Day;
 
-@section featured { 
-<section class="featured">
-    <div class="content-wrapper">
-        <hgroup class="title">
-            <h1>@Page.Title.</h1>
-        </hgroup>
-        <p>
-            The Oddzes are a skittles team playing in the mens league at the 
-            <a href="http://www.consticlub.co.uk" title="Chippenham Constitutional Club Website">Chippenham Constitutional Club</a>.<br>           
-        </p>
-    </div>
-</section>
+        return string.Format( "{0:ddd d}{1} {0:MMM yyyy} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
+                      ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
+                      ( late == false ? "Early" : "Late" ) );
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            <p>
+                The Oddzes are a skittles team playing in the mens league at the
+                <a href="http://www.consticlub.co.uk" title="Chippenham Constitutional Club Website">Chippenham Constitutional Club</a>.<br>
+            </p>
+        </div>
+    </section>
 }
 
 <h3>Games</h3>
-@if ( nextGame != null )
+@if ( games.Count() > 0 )
 {
-    DateTime gameDate = nextGame.Date;
-    int gameDay = gameDate.Day;
+   <table>
+        @{  int nextGamesCount = 0;
+            const int NextGamesLimit = 3;
+            IEnumerator <dynamic> enumerator = games.GetEnumerator();
+            while ( ( nextGamesCount < NextGamesLimit ) && ( enumerator.MoveNext() == true ) )
+            {
+                dynamic nextGame = enumerator.Current;
+                dynamic nextGameLeague = db.QuerySingle( "SELECT * FROM Competition WHERE Id = @0", nextGame.Competition );
 
-    <p>
-        The next game is on <strong>@( string.Format( "{0:ddd d}{1} {0:MMM yyyy} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
-                          ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
-                          ( nextGame.Late == false ? "Early" : "Late" ) ) )</strong>
-        against <a href="@Href( "~/Game", nextGame.Id, nextGameLeague.Matchplay )">@nextGame.Opponents</a> 
-        in <a href="@Href( "~/Competition", nextGameLeague.Id, nextGameLeague.Name, nextGameLeague.Matchplay, nextGameLeague.Locked )">@nextGameLeague.Name</a> 
-    </p>
+                <tr>
+                    <td class="tdNoPad"><strong>@GameDateString( nextGame.Date, nextGame.Late )</strong></td>
+                    <td class="tdNoPad">against <a href="@Href( "~/Game", nextGame.Id, nextGameLeague.Matchplay )">@nextGame.Opponents</a></td>
+                    <td class="tdNoPad">in <a href="@Href( "~/Competition", nextGameLeague.Id, nextGameLeague.Name, nextGameLeague.Matchplay, nextGameLeague.Locked )">@nextGameLeague.Name</a></td>
+                </tr>
+
+                ++nextGamesCount;
+            }
+        }
+    </table>
 }
 else
 {
@@ -58,31 +84,27 @@ else
     <p>For a full set of fixtures see <a href="@Href( "~/DisplayPage", currentFixtures.Id, currentFixtures.Title )">@currentFixtures.Title</a></p>
 }
 
-@if ( nextGame != null )
+@if ( lastAverages != null )
 {
-    AverageDetails.Averages currentAverages = AverageDetails.Averages.CurrentAverages( db, nextGameLeague.Id );
-    if ( currentAverages != null )
-    {
-        <h3>Averages</h3>
-        <p>The current averages in the @nextGameLeague.Name are </p>
-        <table>
+    <h3>Averages</h3>
+    <p>The current averages in the @averagesLeagueName are </p>
+    <table>
+        <tr>
+            <th class="thNotBold">Name</th>
+            <th class="thNotBold">Legs</th>
+            <th class="thNotBold">Pins</th>
+            <th class="thNotBold">Average</th>
+        </tr>
+        @foreach ( AverageDetails.Average avgData in lastAverages.AverageCollection )
+        {
             <tr>
-                <th class="thNotBold">Name</th>
-                <th class="thNotBold">Legs</th>
-                <th class="thNotBold">Pins</th>
-                <th class="thNotBold">Average</th>
+                <td>@db.QueryValue( "SELECT Email FROM UserProfile WHERE UserId=@0", avgData.PlayerId )</td>
+                <td>@avgData.Legs</td>
+                <td>@avgData.Pins</td>
+                <td>@avgData.Avg</td>
             </tr>
-            @foreach ( AverageDetails.Average avgData in currentAverages.AverageCollection )
-            {
-                <tr>
-                    <td>@db.QueryValue( "SELECT Email FROM UserProfile WHERE UserId=@0", avgData.PlayerId )</td>
-                    <td>@avgData.Legs</td>
-                    <td>@avgData.Pins</td>
-                    <td>@avgData.Avg</td>
-                </tr>
-            }
-        </table>
-    }
+        }
+    </table>
 }
 
 <h3>Team</h3>
@@ -96,13 +118,12 @@ else
         if ( user.TeamRole != "Spare" )
         {
             <tr>
-                @{  
-                    // Get the roles associated with this user
+                @{    // Get the roles associated with this user
                     string[] roles = Roles.GetRolesForUser( user.Email );
                     if ( ( user.TeamRole.Length == 0 ) && ( roles.Length == 0 ) )
                     {
                         <td>@user.FullName (@user.Email)</td>
-                    }
+}
                     else
                     {
                         // This user has either a defined team role or login based role so display them as nice as possible
@@ -125,10 +146,10 @@ else
                         }
 
                         <td>@user.FullName (@user.Email) - @roleString</td>
-                    }
+}
                 }
             </tr>}
-    }
+                    }
 </table>
 
 <p>Team members who are also "Scorers" can log in to record the scores for a game</p>

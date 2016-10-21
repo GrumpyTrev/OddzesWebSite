@@ -52,6 +52,31 @@
             return returnAverages;
         }
 
+        /// <summary>
+		/// Find the last set of averages in the database
+		/// </summary>
+		/// <param name="db"></param>
+		/// <returns></returns>
+        public static Averages PreviousAverages( Database db )
+        {
+            Averages returnAverages = null;
+
+            // Get the latest game that has associated averages
+            IEnumerable<dynamic> gamesWithAverages = db.Query( "SELECT Id FROM Game WHERE Id IN ( SELECT Game FROM Average ) ORDER BY Date, Late" );
+
+            if ( gamesWithAverages != null )
+            {
+                // Get the most recent game with averages
+                dynamic mostRecentGame = gamesWithAverages.LastOrDefault();
+                if ( mostRecentGame != null )
+                {
+                    returnAverages = Averages.Deserialise( db, mostRecentGame.Id );
+                }
+            }
+
+            return returnAverages;
+        }
+
         //
         // Find the last set of averages for a specified league
         //
@@ -60,7 +85,7 @@
             Averages returnAverages = null;
 
             // Get the previous games for which average data exists
-            IEnumerable<dynamic> data = db.Query( "SELECT Id FROM Game WHERE ( Competition = @0 ) AND Id IN ( SELECT Game FROM Average ) ORDER BY Date, Late", 
+            IEnumerable<dynamic> data = db.Query( "SELECT Id FROM Game WHERE ( Competition = @0 ) AND Id IN ( SELECT Game FROM Average ) ORDER BY Date, Late",
                 leagueId );
 
             if ( data != null )

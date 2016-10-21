@@ -718,6 +718,10 @@ td {
     background-color: orange;
 }
 
+.tdNoPad {
+    padding: 0.25em 0.5em 0.25em 0em;
+}
+
 .col-1 {
     width: 45%
 }
