@@ -133,16 +133,20 @@
                     }
                 }
 
-                // Create a set of averages for this game based on the previous game
-                AverageDetails.Averages gameAverages = AverageDetails.Averages.PreviousAverages( db, Competition, Date, Late );
-                if ( gameAverages == null )
+                // Are averages required for the competition this game is in
+                if ( db.QueryValue( "SELECT KeepAverages FROM Competition WHERE Id = @0", Competition ) == true )
                 {
-                    // Create an empty set of averages based on the current set of players
-                    gameAverages = AverageDetails.Averages.CreateEmptyAverages( db );
-                }
+                    // Create a set of averages for this game based on the previous game
+                    AverageDetails.Averages gameAverages = AverageDetails.Averages.PreviousAverages( db, Competition, Date, Late );
+                    if ( gameAverages == null )
+                    {
+                        // Create an empty set of averages based on the current set of players
+                        gameAverages = AverageDetails.Averages.CreateEmptyAverages( db );
+                    }
 
-                // Save these averages to the database and associate them with the current game
-                gameAverages.SaveAverages( db, Identity );
+                    // Save these averages to the database and associate them with the current game
+                    gameAverages.SaveAverages( db, Identity );
+                }
             }
         }
 

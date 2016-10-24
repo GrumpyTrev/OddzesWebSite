@@ -1,0 +1,136 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+
+    // Retrieve the document identity from the page request and load the title and tag fields from the database
+    int documentId = UrlData[ 0 ].AsInt();
+
+    Database db = Database.Open( "StarterSite" );
+    dynamic document = db.QuerySingle( "SELECT * FROM Documents WHERE Id = @0", documentId );
+
+    // Initialise general page variables
+    string title = document.Title;
+    string tag = document.Tag;
+    string fakeFileName = "";
+
+    Page.Title = "Update document " + title;
+
+    // Setup validation. Title must be set but the filename can be empty if not being updated
+    Validation.RequireField( "title", "You must specify a document title" );
+
+    if ( IsPost == true )
+    {
+        string newTitle = Request.Form[ "title" ];
+        fakeFileName = Request.Form[ "fakeFileName" ];
+        string newTag = Request.Form[ "tag" ];
+
+        if ( Validation.IsValid() == true )
+        {
+            bool titleValid = true;
+
+            // If the title has changed make sure that is not a document with the same changed title
+            if ( newTitle != title )
+            {
+                // Make sure that a competition with the same name does not already exist
+                if ( db.QueryValue( string.Format( "SELECT * FROM Documents WHERE Title = '{0}'", newTitle ) ) != null )
+                {
+                    ModelState.AddFormError( "A document with the specified title already exists" );
+                    titleValid = false;
+                }
+            }
+
+            if ( titleValid == true )
+            {
+                // If either the title or tag has changed then update the documents table entry
+                if ( ( newTitle != title ) || ( newTag != tag ) )
+                {
+                    db.Execute( "UPDATE Documents SET Title=@0, Tag=@1 WHERE Id=@2", newTitle, newTag, documentId );
+                }
+            }
+
+            // If a filename has been specified then load it into the document table
+            if ( titleValid == true )
+            {
+                if ( fakeFileName.Length > 0 )
+                {
+                    HttpPostedFileBase uploadedFile = Request.Files[ 0 ];
+
+                    // Load the file into a byte array
+                    int fileLength = uploadedFile.ContentLength;
+                    byte[] fileContent = new byte[ fileLength ];
+                    uploadedFile.InputStream.Read( fileContent, 0, fileLength );
+
+                    // Update the actual content
+                    db.Execute( "UPDATE DocumentStorage SET Content=@0 WHERE Id=@1", fileContent, documentId );
+                }
+
+                Response.Redirect( "~/Docs" );
+            }
+        }
+
+        // If the form is going to be displayed again then there must have been an error, so display the entered values again
+        tag = newTag;
+        title = newTitle;
+    }
+}
+
+<script type="text/javascript">
+    $( function()
+        {
+        $( "#fakeUploadButton" ).click( function()
+        { 
+            $( "#File" ).click();
+            } );
+
+        $("#File").bind('change', function () {
+            $( "#fakeFileName" ).val( this.value );
+            } );
+        } );
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            <p>
+                Use the form below to update the document.
+            </p>
+        </div>
+    </section>
+}
+
+<section>
+    <form method="post" name="form1" enctype="multipart/form-data">
+
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary( "Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null )
+
+        <fieldset>
+            <legend>Add new document</legend>
+            <ol>
+                <li>
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" value="@title" @Validation.For( "title" ) />
+                    @Html.ValidationMessage( "title" )
+                </li>
+                <li>
+                    <label for="tag">Tag</label>
+                    <input type="text" id="tag" name="tag" value="@tag" />
+                </li>
+
+                <li>
+                    <label for="fakeFileName">File</label>
+                    <input type="text" id="fakeFileName" name="fakeFileName" readonly="readonly" value="@fakeFileName" @Validation.For( "fakeFileName" ) />
+
+                    <input id="File" name="File" type="file" value="" style="display:none" />
+                    <input class="btn" id="fakeUploadButton" type="button" value="Browse" />
+
+                    @Html.ValidationMessage( "fakeFileName" )
+                </li>
+            </ol>
+            <input type="submit" value="Update document" id="submit" />
+
+       </fieldset>
+    </form>
+</section>
