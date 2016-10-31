@@ -4,6 +4,8 @@
     int gameId = UrlData[ 0 ].AsInt();
     bool matchPlay = UrlData[ 1 ].AsBool();
 
+    StarterSiteEntities model = new StarterSiteEntities();
+
     Database db = Database.Open( "StarterSite" );
     GameDetails.Game gameDetails = GameDetails.Game.Deserialise( db, gameId );
 
@@ -200,7 +202,7 @@
         document.getElementById('scoresForm').submit();
     }
 
-    function setScore(dropDownBox, setIndex, scoreIndex, legIndex) {
+    function setScore( dropDownBox, setIndex, scoreIndex, legIndex) {
         document.getElementById('pins').value = document.getElementById(dropDownBox).value;
         document.getElementById('set').value = setIndex;
         document.getElementById('score').value = scoreIndex;
@@ -208,7 +210,7 @@
         document.getElementById('scoresForm').submit();
     }
 
-    function setPoints(dropDownBox, setIndex, scoreIndex, legIndex) {
+    function setPoints( dropDownBox, setIndex, scoreIndex, legIndex) {
         document.getElementById('points').value = document.getElementById(dropDownBox).value;
         document.getElementById('set').value = setIndex;
         document.getElementById('score').value = scoreIndex;
@@ -300,24 +302,16 @@
                     // Now draw the table for the set
                     <table>
                         <tr>
-                            <th>Set @( index + 1 )</th>
-                            <th>Leg 1</th>
-                            @if ( matchPlay == true )
+                            @if ( matchPlay == false )
                             {
-                                <th>Points</th>
+                                <th>Set @( index + 1 )</th><th>Leg 1</th><th>Leg 2</th><th>Leg 3</th><th>Total</th>
                             }
-                            <th>Leg 2</th>
-                            @if ( matchPlay == true )
+                            else
                             {
-                                <th>Points</th>
+                                <th>Set @( index + 1 )</th><th>Leg 1</th><th>Points</th><th>Leg 2</th><th>Points</th><th>Leg 3</th><th>Points</th><th>Total</th>
                             }
-                            <th>Leg 3</th>
-                            @if ( matchPlay == true )
-                            {
-                                <th>Points</th>
-                            }
-                            <th>Total</th>
                         </tr>
+                        
                         @for ( int scoreIndex = 0; scoreIndex < 6; scoreIndex++ )
                         {
                             GameDetails.Score playerScore = setData.Scores[ scoreIndex ];
@@ -327,23 +321,20 @@
 
                             <tr>
                                 <td>
-                                    <select id="@dropName" onchange="selectPlayerName( '@dropName', '@index', '@scoreIndex' );">
-                                        @if ( playerScore.PlayerId == -1 )
+                                    @{  // Create a list of player names with the current value selected
+                                        List<SelectListItem> playerItems = ( model.UserProfiles.Select(
+                                            user => new SelectListItem { Value = user.Email, Text = user.Email,
+                                                Selected = ( user.Email == playerScore.PlayerName ) ? true : false } ) ).ToList();
+
+                                        // If no player selected add an empty entry to the front and select it
+                                        if ( playerScore.PlayerId == -1 )
                                         {
-                                            <option selected="selected"></option>
+                                            playerItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
                                         }
-                                        @foreach ( dynamic user in users )
-                                        {
-                                            if ( playerScore.PlayerName == user.email )
-                                            {
-                                                <option selected="selected">@user.email</option>
-                                            }
-                                            else
-                                            {
-                                                <option>@user.email</option>
-                                            }
-                                        }
-                                    </select>
+                                    }
+
+                                    @Html.DropDownList( dropName, playerItems, 
+                                        new { onChange = string.Format( "selectPlayerName( '{0}', {1}, {2} );", dropName, index, scoreIndex ) } )
                                 </td>
 
                                 @if ( playersValid == true )
@@ -353,23 +344,20 @@
                                         dropName = "drop" + dropDownIndex++;
 
                                         <td>
-                                            <select id="@dropName" onchange="setScore( '@dropName', '@index', '@scoreIndex', '@legIndex' );">
-                                                @if ( playerScore.Legs[ legIndex ] == -1 )
+                                            @{  // Create a list of possible scores with the current value selected
+                                                List<SelectListItem> scoreItems = ( Enumerable.Range( 0, 28 ).Select(
+                                                    score => new SelectListItem { Value = score.ToString(), Text = score.ToString(),
+                                                        Selected = ( score == playerScore.Legs[ legIndex ] ) ? true : false } ) ).ToList();
+
+                                                // If no score has been selected then add an empty entry to the front of the list
+                                                if ( playerScore.Legs[ legIndex ] == -1 )
                                                 {
-                                                    <option selected="selected"></option>
+                                                    scoreItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
                                                 }
-                                                @for ( int possibleScore = 0; possibleScore < 28; possibleScore++ )
-                                                {
-                                                    if ( playerScore.Legs[ legIndex ] == possibleScore )
-                                                    {
-                                                        <option selected="selected">@possibleScore</option>
-                                                    }
-                                                    else
-                                                    {
-                                                        <option>@possibleScore</option>
-                                                    }
-                                                }
-                                            </select>
+                                            }
+
+                                            @Html.DropDownList( dropName, scoreItems,
+                                                new { onChange = string.Format( "setScore( '{0}', {1}, {2}, {3} );", dropName, index, scoreIndex, legIndex ) } )
                                         </td>
 
                                         if ( matchPlay == true )
@@ -377,35 +365,18 @@
                                             dropName = "drop" + dropDownIndex++;
 
                                             <td>
-                                                <select id="@dropName" onchange="setPoints( '@dropName', '@index', '@scoreIndex', '@legIndex' );">
-                                                    @if ( playerScore.Points[ legIndex ] == 0 )
+                                                @{  // Create a list of possible point values with the current value selected
+                                                    List<SelectListItem> pointsItems = new List<SelectListItem>
                                                     {
-                                                        <option selected="selected">0</option>
-                                                    }
-                                                    else
-                                                    {
-                                                        <option>0</option>
-                                                    }
+                                                        new SelectListItem { Value = "0", Text = "0", Selected = ( playerScore.Points[ legIndex ] == 0 ) },
+                                                        new SelectListItem { Value = "1", Text = "1", Selected = ( playerScore.Points[ legIndex ] == 1 ) },
+                                                        new SelectListItem { Value = "\xbd", Text = "\xbd", Selected = ( playerScore.Points[ legIndex ] == ( decimal )0.5 ) }
+                                                    };
 
-                                                    @if ( playerScore.Points[ legIndex ] == 1 )
-                                                    {
-                                                        <option selected="selected">1</option>
-                                                    }
-                                                    else
-                                                    {
-                                                        <option>1</option>
-                                                    }
-
-                                                    @if ( playerScore.Points[ legIndex ] == ( decimal )0.5 )
-                                                    {
-                                                        <option selected="selected">&#189</option>
-                                                    }
-                                                    else
-                                                    {
-                                                        <option>&#189</option>
-                                                    }
-                                                </select>
-                                            </td>
+                                                }
+                                                @Html.DropDownList( dropName, pointsItems,
+                                                new { onChange = string.Format( "setPoints( '{0}', {1}, {2}, {3} );", dropName, index, scoreIndex, legIndex ) } )
+                                             </td>
                                         }
                                     }
 
@@ -437,19 +408,19 @@
                         @* Display the scores and points for each leg *@
                         <tr>
                             <td></td>
-                            <td>@setData.TotalScore.Legs[ 0 ]</td>
-                            @if ( matchPlay == true )
+                            @if ( matchPlay == false )
                             {
+                                <td>@setData.TotalScore.Legs[ 0 ]</td>
+                                <td>@setData.TotalScore.Legs[ 1 ]</td>
+                                <td>@setData.TotalScore.Legs[ 2 ]</td>
+                            }
+                            else
+                            {
+                                <td>@setData.TotalScore.Legs[ 0 ]</td>
                                 <td>@setData.TotalScore.Points[ 0 ]</td>
-                            }
-                            <td>@setData.TotalScore.Legs[ 1 ]</td>
-                            @if ( matchPlay == true )
-                            {
+                                <td>@setData.TotalScore.Legs[ 1 ]</td>
                                 <td>@setData.TotalScore.Points[ 1 ]</td>
-                            }
-                            <td>@setData.TotalScore.Legs[ 2 ]</td>
-                            @if ( matchPlay == true )
-                            {
+                                <td>@setData.TotalScore.Legs[ 2 ]</td>
                                 <td>@setData.TotalScore.Points[ 2 ]</td>
                             }
                             <td>@setData.TotalScore.Total</td>
@@ -460,41 +431,41 @@
 
             <h3>Score</h3>
             <div>
-                <select id="OurScore" onchange="setOurScore();">
-                    @if ( gameDetails.Us == -1 )
-                    {
-                        <option selected="selected"></option>
-                    }
-                    @for( int possibleScore = 0; possibleScore < 15; possibleScore++ )
-                    {
-                        if ( gameDetails.Us == possibleScore )
+                @{  // Create a list of possible scores with the current value selected
+                    List<SelectListItem> ourScoreItems = ( Enumerable.Range( 0, 15 ).Select(
+                        score => new SelectListItem
                         {
-                            <option selected="selected">@possibleScore</option>
-                        }
-                        else
-                        {   
-                            <option>@possibleScore</option>
-                        }
+                            Value = score.ToString(),
+                            Text = score.ToString(),
+                            Selected = ( score == gameDetails.Us ) ? true : false
+                        } ) ).ToList();
+
+                    // If no score has been selected then add an empty entry to the front of the list
+                    if ( gameDetails.Us == -1 )
+                    {
+                        ourScoreItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
                     }
-                </select>
+                }
+
+                @Html.DropDownList( "OurScore", ourScoreItems, new { onChange = "setOurScore();" } )
                 -
-                <select id="TheirScore" onchange="setTheirScore();">
-                    @if ( gameDetails.Them == -1 )
-                    {
-                        <option selected="selected"></option>
-                    }
-                    @for( int possibleScore = 0; possibleScore < 15; possibleScore++ )
-                    {
-                        if ( gameDetails.Them == possibleScore )
+                @{  // Create a list of possible scores with the current value selected
+                    List<SelectListItem> theirScoreItems = ( Enumerable.Range( 0, 15 ).Select(
+                        score => new SelectListItem
                         {
-                            <option selected="selected">@possibleScore</option>
-                        }
-                        else
-                        {   
-                            <option>@possibleScore</option>
-                        }
+                            Value = score.ToString(),
+                            Text = score.ToString(),
+                            Selected = ( score == gameDetails.Them ) ? true : false
+                        } ) ).ToList();
+
+                    // If no score has been selected then add an empty entry to the front of the list
+                    if ( gameDetails.Them == -1 )
+                    {
+                        theirScoreItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
                     }
-                </select>
+                }
+
+                @Html.DropDownList( "TheirScore", theirScoreItems, new { onChange = "setTheirScore();" } )
             </div>
 
         </form>
@@ -529,7 +500,7 @@
                 {
                     <table>
                         <tr>
-                            <th>Set @index</th> <th>Leg 1</th> <th>Leg 2</th> <th>Leg 3</th> <th>Total</th>
+                            <th>Set @index</th><th>Leg 1</th><th>Leg 2</th><th>Leg 3</th><th>Total</th>
                         </tr>
                         @foreach( GameDetails.Score playerScore in setData.Scores )
                         {
@@ -566,7 +537,7 @@
                 {
                     <table>
                         <tr>
-                            <th>Set @index</th> <th>Leg 1</th> <th>Points</th> <th>Leg 2</th> <th>Points</th> <th>Leg 3</th> <th>Points</th> <th>Total</th>
+                            <th>Set @index</th><th>Leg 1</th><th>Points</th><th>Leg 2</th><th>Points</th><th>Leg 3</th><th>Points</th><th>Total</th>
                         </tr>
                         @foreach( GameDetails.Score playerScore in setData.Scores )
                         {
@@ -618,15 +589,12 @@
     {
         <table>
             <tr>
-                <th>Name</th>
-                <th>Legs</th>
-                <th>Pins</th>
-                <th>Average</th>
+                <th>Name</th><th>Legs</th><th>Pins</th><th>Average</th>
             </tr>
             @foreach( AverageDetails.Average avgData in gameDetails.Averages.AverageCollection )
             {
                 <tr>
-                    <td>@db.QueryValue( "SELECT Email FROM UserProfile WHERE UserId=@0", avgData.PlayerId )</td>
+                    <td>@model.UserProfiles.First( user => user.UserId == avgData.PlayerId ).Email</td>
                     <td>@avgData.Legs</td>
                     <td>@avgData.Pins</td>
                     <td>@avgData.Avg</td>

@@ -1,8 +1,9 @@
 ﻿@{
     Layout = "~/_SiteLayout.cshtml";
     Page.Title = "Results";
-    Database db = Database.Open( "StarterSite" );
-    IEnumerable< dynamic > leagues = db.Query( "SELECT * FROM Competition ORDER BY Id" );
+
+    StarterSiteEntities model = new StarterSiteEntities();
+    IQueryable<Competition> leagues = model.Competitions.OrderBy( league => league.Id );
 }
 
 @section featured { 
@@ -20,7 +21,7 @@
 }
 
 <table>
-    @foreach( dynamic league in leagues )
+    @foreach( Competition league in leagues )
     {
         <tr>
             <td><a href="@Href( "~/Competition", league.Id, league.Name, league.Matchplay, league.Locked )">@league.Name</a></td>

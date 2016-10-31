@@ -107,26 +107,23 @@
         @Html.ValidationSummary( "Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null )
 
         <fieldset>
-            <legend>Add new document</legend>
+            <legend>Update document</legend>
             <ol>
                 <li>
-                    <label for="title">Title</label>
-                    <input type="text" id="title" name="title" value="@title" @Validation.For( "title" ) />
+                    @Html.Label( "Title", "title" )
+                    @Html.TextBox( "title", title )
                     @Html.ValidationMessage( "title" )
                 </li>
                 <li>
-                    <label for="tag">Tag</label>
-                    <input type="text" id="tag" name="tag" value="@tag" />
+                    @Html.Label( "Tag", "tag" )
+                    @Html.TextBox( "tag", tag )
                 </li>
-
                 <li>
-                    <label for="fakeFileName">File</label>
-                    <input type="text" id="fakeFileName" name="fakeFileName" readonly="readonly" value="@fakeFileName" @Validation.For( "fakeFileName" ) />
+                    @Html.Label( "File", "fakeFileName" )
+                    @Html.TextBox( "fakeFileName", fakeFileName, new { @readonly = "readonly" } )
 
                     <input id="File" name="File" type="file" value="" style="display:none" />
                     <input class="btn" id="fakeUploadButton" type="button" value="Browse" />
-
-                    @Html.ValidationMessage( "fakeFileName" )
                 </li>
             </ol>
             <input type="submit" value="Update document" id="submit" />

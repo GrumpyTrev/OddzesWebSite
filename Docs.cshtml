@@ -1,16 +1,13 @@
 ﻿@{
     Layout = "~/_SiteLayout.cshtml";
     Page.Title = "Documents";
-    Database db = Database.Open( "StarterSite" );
-    IEnumerable<dynamic> documents = db.Query( "SELECT * FROM Documents ORDER BY Id" );
 
-    // Put the Id of the documents into an array
-    int[] indexes = new int[ documents.Count() ];
-    int documentIndex = 0;
-    foreach ( dynamic document in documents )
-    {
-        indexes[ documentIndex++ ] = document.Id;
-    }
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    IQueryable<Document> documents = model.Documents.OrderBy( document => document.Id );
+
+    // Put the indexes of the documents into an array
+    int[] indexes = documents.Select( document => document.Id ).ToArray();
 
     // If this is a POST request, validate and process data
     if ( IsPost == true )
@@ -26,8 +23,11 @@
                 int selectedIndex = indexes[ selection.AsInt() ];
 
                 // Delete the content first and then the index
-                db.Execute( "DELETE FROM DocumentStorage WHERE Id=@0", selectedIndex );
-                db.Execute( "DELETE FROM Documents WHERE Id=@0", selectedIndex );
+
+                model.DocumentStorages.Remove( model.DocumentStorages.Single( storage => storage.Id == selectedIndex ) );
+                model.Documents.Remove( documents.Single( document => document.Id == selectedIndex ) );
+
+                model.SaveChanges();
             }
 
             Response.Redirect( Request.RawUrl );
@@ -101,13 +101,13 @@
     <table>
         @{  int index = 0;
 
-            foreach ( dynamic document in documents )
+            foreach ( Document document in documents )
             {
                 <tr>
                     <td>
                         @if ( Roles.IsUserInRole( "Admin" ) == true )
                         {
-                            <input type=checkbox name=selected value="@index" onchange="OnDocumentSelected();">
+                            @Html.CheckBox( "selected", new { value = index, onChange = "OnDocumentSelected();" } )
                         }
                         <a href="@Href( "~/DisplayPage", document.Id, document.Title )">@document.Title</a>
                     </td>
