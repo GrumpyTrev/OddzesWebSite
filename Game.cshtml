@@ -513,8 +513,9 @@
                                     <td>@LegString( playerScore.Legs[ 2 ] )</td>
                                     @if ( lowestScorePlayers.Contains( playerScore.PlayerName ) == true )
                                     {
-                                        <td class="tdRed">@LegString( playerScore.Total )</td>
-                                    }
+@*                                        <td class="tdRed">@LegString( playerScore.Total )</td> *@
+                                        <td><span style="background-color: #FFFF00">@LegString( playerScore.Total )</span></td>
+}
                                     else
                                     {
                                         <td>@LegString( playerScore.Total )</td>
@@ -589,7 +590,7 @@
     {
         <table>
             <tr>
-                <th>Name</th><th>Legs</th><th>Pins</th><th>Average</th>
+                <th>Name</th><th>Legs</th><th>Pins</th><th>Average</th><th>Change</th>
             </tr>
             @foreach( AverageDetails.Average avgData in gameDetails.Averages.AverageCollection )
             {
@@ -598,6 +599,8 @@
                     <td>@avgData.Legs</td>
                     <td>@avgData.Pins</td>
                     <td>@avgData.Avg</td>
+                    <td>@AverageDetails.Averages.PlayerDirectionString( 
+                       AverageDetails.Averages.PlayerDirection( gameDetails.Averages, gameDetails.PreviousAverages, avgData.PlayerId ) )</td>
                 </tr>
             }
         </table>

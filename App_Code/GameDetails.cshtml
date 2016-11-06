@@ -97,6 +97,19 @@
                         }
                     }
                 }
+
+                // Get the averages from the game before this in the same league
+                if ( returnGame.Averages != null )
+                {
+                    dynamic gameBeforeThis = db.Query(
+                        "SELECT * FROM Game WHERE Competition = @2 AND ( (Date < @0) OR ( (Date = @0) AND (Late < @1) ) ) ORDER BY Date, Late",
+                        returnGame.Date, returnGame.Late, returnGame.Competition ).LastOrDefault();
+
+                    if ( gameBeforeThis != null )
+                    {
+                        returnGame.PreviousAverages = AverageDetails.Averages.Deserialise( db, gameBeforeThis.Id );
+                    }
+                }
             }
 
             return returnGame;
@@ -199,6 +212,12 @@
         }
 
         public AverageDetails.Averages Averages
+        {
+            get;
+            set;
+        }
+
+        public AverageDetails.Averages PreviousAverages
         {
             get;
             set;

@@ -52,6 +52,41 @@
             return returnAverages;
         }
 
+        public static int PlayerDirection( Averages currentAverages, Averages previousAverages, int playerId )
+        {
+            int direction = 0;
+
+            if ( ( currentAverages != null ) && ( previousAverages != null ) )
+            {
+                // Where is the player in the current averages
+                int currentIndex = currentAverages.AverageCollection.FindIndex( average => average.PlayerId == playerId );
+                int previousIndex = previousAverages.AverageCollection.FindIndex( average => average.PlayerId == playerId );
+
+                if ( ( currentIndex != -1 ) && ( previousIndex != -1 ) )
+                {
+                    direction = currentIndex.CompareTo( previousIndex );
+                }
+            }
+
+            return direction;
+        }
+
+        public static string PlayerDirectionString( int playerDirection )
+        {
+            string directionString = '\u2194'.ToString();
+
+            if ( playerDirection < 0 )
+            {
+                directionString = '\u2191'.ToString();
+            }
+            else if ( playerDirection > 0 )
+            {
+                directionString = '\u2193'.ToString();
+            }
+
+            return directionString;
+        }
+
         /// <summary>
 		/// Find the last set of averages in the database
 		/// </summary>
