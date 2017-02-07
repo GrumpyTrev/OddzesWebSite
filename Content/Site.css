@@ -742,6 +742,13 @@ td {
     div.mobile {
         display: none;
     }
+    th.mobile {
+        display: none;
+    }
+    
+    td.mobile {
+        display: none;
+    }
 }
 
 
@@ -764,11 +771,11 @@ td {
         display: none;
     }
 
-    th.mobile {
+    th.non-mobile {
         display: none;
     }
     
-    td.mobile {
+    td.non-mobile {
         display: none;
     }
 

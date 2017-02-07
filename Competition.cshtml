@@ -45,35 +45,49 @@
                     <th>Opponents</th>
                     <th>Score</th>
                 </tr>
-                @foreach ( dynamic game in games )
-                {
-                    DateTime gameDate = game.Date;
-                    int gameDay = gameDate.Day;
+				@{
+					string monthString = "";
 
-                    <tr>
-                        <td>
-                            <a href="@Href( "~/Game", game.Id, matchPlay )">
-                                @( string.Format( "{0:ddd d}{1} {0:MMM yyyy} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
-                          ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
-                          ( game.Late == false ? "Early" : "Late" ) ) )
-                            </a>
-                        </td>
-                        <td><a href="@Href( "~/Game", game.Id, matchPlay )">@game.Opponents</a></td>
-                        @if ( game.InProgress == true )
-                        {
-                            <td>GAME IN PROGRESS</td>
-                        }
-                        else
-                        {
-                            // Display the score if present - not available for older leagues
-                            if ( game.Us != -1 )
-                            {
-                                <td><a href="@Href( "~/Game", game.Id, matchPlay )">@game.Us - @game.Them</a></td>
-                            }
-                        }
-                    </tr>
-                }
+					foreach ( dynamic game in games )
+					{
+						DateTime gameDate = game.Date;
 
+						// Get month and year for this game
+						string thisGameMonthString = gameDate.ToString( "MMM yyyy");
+
+						// Already displaying games for this month?#
+						if ( monthString != thisGameMonthString )
+						{
+							monthString = thisGameMonthString;
+							<tr><td class="tdNoPad"><strong>@monthString</strong></td></tr>
+						}
+
+						int gameDay = gameDate.Day;
+
+						<tr>
+							<td class="tdNoPad">
+								<a href="@Href( "~/Game", game.Id, matchPlay )">
+									@( string.Format( " {0:ddd d}{1} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
+									( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
+									( game.Late == false ? "Early" : "Late" ) ) )
+								</a>
+							</td>
+							<td class="tdNoPad"><a href="@Href( "~/Game", game.Id, matchPlay )">@game.Opponents</a></td>
+							@if ( game.InProgress == true )
+							{
+								<td class="tdNoPad">GAME IN PROGRESS</td>
+							}
+							else
+							{
+								// Display the score if present - not available for older leagues
+								if ( game.Us != -1 )
+								{
+									<td class="tdNoPad"><a href="@Href( "~/Game", game.Id, matchPlay )">@game.Us - @game.Them</a></td>
+								}
+							}
+						</tr>
+					}
+				}
             </table>
         </div>
 

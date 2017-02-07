@@ -67,7 +67,7 @@
                 <tr>
                     <td class="tdNoPad"><strong>@GameDateString( nextGame.Date, nextGame.Late.GetValueOrDefault() )</strong></td>
                     <td class="tdNoPad">against <a href="@Href( "~/Game", nextGame.Id, nextGameLeague.Matchplay )">@nextGame.Opponents</a></td>
-                    <td class="tdNoPad">in <a href="@Href( "~/Competition", nextGameLeague.Id, nextGameLeague.Name, nextGameLeague.Matchplay, nextGameLeague.Locked )">@nextGameLeague.Name</a></td>
+                    <td class="non-mobile tdNoPad">in <a href="@Href( "~/Competition", nextGameLeague.Id, nextGameLeague.Name, nextGameLeague.Matchplay, nextGameLeague.Locked )">@nextGameLeague.Name</a></td>
                 </tr>
             }
         }
