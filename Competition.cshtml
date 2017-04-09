@@ -82,7 +82,16 @@
 								// Display the score if present - not available for older leagues
 								if ( game.Us != -1 )
 								{
-									<td class="tdNoPad"><a href="@Href( "~/Game", game.Id, matchPlay )">@game.Us - @game.Them</a></td>
+									// For match play leagues the scores are stored as double the actual scores (due to halves being possible).
+									// So display divided by two if required.
+									if ( matchPlay == false )
+									{
+										<td class="tdNoPad"><a href="@Href( "~/Game", game.Id, matchPlay )">@game.Us - @game.Them</a></td>
+									}
+									else
+									{
+										<td class="tdNoPad"><a href="@Href( "~/Game", game.Id, matchPlay )">@( ( decimal )game.Us / 2 ) - @( ( decimal )game.Them / 2 )</a></td>
+									}
 								}
 							}
 						</tr>

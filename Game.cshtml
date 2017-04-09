@@ -432,37 +432,63 @@
             <h3>Score</h3>
             <div>
                 @{  // Create a list of possible scores with the current value selected
-                    List<SelectListItem> ourScoreItems = ( Enumerable.Range( 0, 15 ).Select(
-                        score => new SelectListItem
-                        {
-                            Value = score.ToString(),
-                            Text = score.ToString(),
-                            Selected = ( score == gameDetails.Us ) ? true : false
-                        } ) ).ToList();
-
-                    // If no score has been selected then add an empty entry to the front of the list
-                    if ( gameDetails.Us == -1 )
-                    {
-                        ourScoreItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
-                    }
+					// For match play the values stored are double the actual scores (due to halves being possibe)
+					// The drop down list will show the half values but the values associated with the list items are doubled up 
+					List<SelectListItem> ourScoreItems = null;
+					if ( matchPlay == true )
+					{
+						ourScoreItems = ( Enumerable.Range( 0, 77 ).Select( x => (decimal)x/2 ).Select(
+							score => new SelectListItem {
+								Value = ( ( int )( score * 2 ) ).ToString(),
+								Text = score.ToString(),
+								Selected = ( (int)( score * 2 ) == gameDetails.Us ) ? true : false
+							} ) ).ToList();
+					}
+					else
+					{
+						ourScoreItems = ( Enumerable.Range( 0, 15 ).Select(
+							score => new SelectListItem
+							{
+								Value = score.ToString(),
+								Text = score.ToString(),
+								Selected = ( score == gameDetails.Us ) ? true : false
+							} ) ).ToList();
+					}
+					// If no score has been selected then add an empty entry to the front of the list
+					if ( gameDetails.Us == -1 )
+					{
+						ourScoreItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
+					}
                 }
 
                 @Html.DropDownList( "OurScore", ourScoreItems, new { onChange = "setOurScore();" } )
                 -
                 @{  // Create a list of possible scores with the current value selected
-                    List<SelectListItem> theirScoreItems = ( Enumerable.Range( 0, 15 ).Select(
-                        score => new SelectListItem
-                        {
-                            Value = score.ToString(),
-                            Text = score.ToString(),
-                            Selected = ( score == gameDetails.Them ) ? true : false
-                        } ) ).ToList();
+					List<SelectListItem> theirScoreItems = null;
+					if ( matchPlay ==  true )
+					{
+						theirScoreItems = ( Enumerable.Range( 0, 77 ).Select( x => ( decimal )x / 2 ).Select(
+							score => new SelectListItem {
+								Value = ( ( int )( score * 2 ) ).ToString(),
+								Text = score.ToString(),
+								Selected = ( ( int )( score * 2 ) == gameDetails.Them ) ? true : false
+							} ) ).ToList();
+					}
+					else
+					{
+						theirScoreItems = ( Enumerable.Range( 0, 15 ).Select(
+							score => new SelectListItem {
+								Value = score.ToString(),
+								Text = score.ToString(),
+								Selected = ( score == gameDetails.Them ) ? true : false
+							} ) ).ToList();
+					}
 
-                    // If no score has been selected then add an empty entry to the front of the list
-                    if ( gameDetails.Them == -1 )
-                    {
-                        theirScoreItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
-                    }
+					// If no score has been selected then add an empty entry to the front of the list
+					if ( gameDetails.Them == -1 )
+					{
+						theirScoreItems.Insert( 0, new SelectListItem { Value = "", Text = "", Selected = true } );
+					}
                 }
 
                 @Html.DropDownList( "TheirScore", theirScoreItems, new { onChange = "setTheirScore();" } )
@@ -581,8 +607,18 @@
 
         if ( gameDetails.Us != -1 )
         {
-            <h3>Score</h3>
-            <div>@gameDetails.Us - @gameDetails.Them</div>
+			if ( matchPlay == false )
+			{
+				<h3>Score</h3>
+	            <div>@gameDetails.Us - @gameDetails.Them</div>
+			}
+			else
+			{
+				// For match play leagues the scores are stored as double the actual scores (due to halves being possible).
+				// So display divided by two if required.
+				<h3>Score</h3>
+	            <div>@( (decimal)gameDetails.Us / 2 ) - @( (decimal)gameDetails.Them / 2 )</div>
+			}
         }
     }
 

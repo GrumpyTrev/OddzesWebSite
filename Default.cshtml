@@ -8,6 +8,9 @@
     DateTime timeNow = DateTime.Now.Date;
     IQueryable<Game> games = model.Games.Where( game => game.Date >= timeNow ).OrderBy( game => game.Date).Take( 3 );
 
+	// What was the last game played
+	Game lastGame = model.Games.Where( game => ( game.Complete == true) ).OrderByDescending( game => game.Date ).ThenByDescending( game => game.Late).FirstOrDefault();
+
     // Find the current fixtures
     Document currentFixtures = model.Documents.First( fixture => fixture.Tag == "Fixtures" );
 
@@ -29,17 +32,29 @@
 
 @functions
 {
-    //
-    // String representation of a leg score
-    //
-    string GameDateString( DateTime gameDate, bool late )
-    {
-        int gameDay = gameDate.Day;
+	//
+	// String representation of a leg score
+	//
+	string GameDateString( DateTime gameDate, bool late )
+	{
+		int gameDay = gameDate.Day;
 
-        return string.Format( "{0:ddd d}{1} {0:MMM yyyy} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
-                      ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
-                      ( late == false ? "Early" : "Late" ) );
-    }
+		return string.Format( "{0:ddd d}{1} {0:MMM yyyy} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
+					  ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
+					  ( late == false ? "Early" : "Late" ) );
+	}
+
+	//
+	// String representation of a leg score
+	//
+	string GameDateString( DateTime gameDate )
+	{
+		int gameDay = gameDate.Day;
+
+		return string.Format( "{0:ddd d}{1} {0:MMM yyyy}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
+					  ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ) );
+	}
+
 }
 
 @section featured {
@@ -76,6 +91,12 @@
 else
 {
     <p>There are no games scheduled</p>
+}
+
+@if ( lastGame != null )
+{
+	Competition lastGameLeague = model.Competitions.Where( league => league.Id == lastGame.Competition ).Single();
+	<p> Last game was against <a href="@Href( "~/Game", lastGame.Id, lastGameLeague.Matchplay )">@lastGame.Opponents</a> on @GameDateString( lastGame.Date )</p>
 }
 
 @if ( currentFixtures != null )
