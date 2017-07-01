@@ -12,7 +12,7 @@
 	Game lastGame = model.Games.Where( game => ( game.Complete == true) ).OrderByDescending( game => game.Date ).ThenByDescending( game => game.Late).FirstOrDefault();
 
     // Find the current fixtures
-    Document currentFixtures = model.Documents.First( fixture => fixture.Tag == "Fixtures" );
+    Document currentFixtures = model.Documents.FirstOrDefault( fixture => fixture.Tag == "Fixtures" );
 
     // Get the last set of averages
     AverageDetails.Averages lastAverages = AverageDetails.Averages.PreviousAverages( Database.Open( "StarterSite" ) );
