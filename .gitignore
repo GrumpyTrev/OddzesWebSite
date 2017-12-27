@@ -146,7 +146,7 @@ publish/
 # your web deploy settings because they may include unencrypted
 # passwords
 #*.pubxml
-*.publishproj
+#*.publishproj
 
 # NuGet Packages
 *.nupkg
