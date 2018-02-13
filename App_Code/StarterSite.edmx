@@ -25,6 +25,7 @@
           <Property Name="Matchplay" Type="bit" />
           <Property Name="Locked" Type="bit" Nullable="false" />
           <Property Name="KeepAverages" Type="bit" />
+          <Property Name="Archive" Type="bit" Nullable="false" />
         </EntityType>
         <EntityType Name="Documents">
           <Key>
@@ -201,6 +202,7 @@
           <Property Name="Matchplay" Type="Boolean" />
           <Property Name="Locked" Type="Boolean" Nullable="false" />
           <Property Name="KeepAverages" Type="Boolean" />
+          <Property Name="Archive" Type="Boolean" Nullable="false" />
         </EntityType>
         <EntityType Name="Document">
           <Key>
@@ -343,6 +345,7 @@
           <EntitySetMapping Name="Competitions">
             <EntityTypeMapping TypeName="StarterSiteModel.Competition">
               <MappingFragment StoreEntitySet="Competition">
+                <ScalarProperty Name="Archive" ColumnName="Archive" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="Matchplay" ColumnName="Matchplay" />

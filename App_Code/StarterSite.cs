@@ -27,6 +27,7 @@ public partial class Competition
     public Nullable<bool> Matchplay { get; set; }
     public bool Locked { get; set; }
     public Nullable<bool> KeepAverages { get; set; }
+    public bool Archive { get; set; }
 }
 
 public partial class Document

@@ -3,7 +3,7 @@
     Page.Title = "Results";
 
     StarterSiteEntities model = new StarterSiteEntities();
-    IQueryable<Competition> leagues = model.Competitions.OrderBy( league => league.Id );
+    IQueryable<Competition> leagues = model.Competitions.Where( league => ( league.Archive == false ) ).OrderBy( league => league.Id );
 }
 
 @section featured { 
