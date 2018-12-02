@@ -8,20 +8,20 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Oddzes", "http://localhost:
 		UseIISExpress = "true"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
 		Debug.AspNetCompiler.VirtualPath = "/localhost_26206"
-		Debug.AspNetCompiler.PhysicalPath = "..\TestNav\"
+		Debug.AspNetCompiler.PhysicalPath = "..\Website\"
 		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_26206\"
 		Debug.AspNetCompiler.Updateable = "true"
 		Debug.AspNetCompiler.ForceOverwrite = "true"
 		Debug.AspNetCompiler.FixedNames = "false"
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.VirtualPath = "/localhost_26206"
-		Release.AspNetCompiler.PhysicalPath = "..\TestNav\"
+		Release.AspNetCompiler.PhysicalPath = "..\Website\"
 		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_26206\"
 		Release.AspNetCompiler.Updateable = "true"
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
-		SlnRelativePath = "..\TestNav\"
+		SlnRelativePath = "..\Website\"
 	EndProjectSection
 EndProject
 Global
