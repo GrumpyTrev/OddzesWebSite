@@ -139,7 +139,7 @@ else
         {
             <tr>
                 @{ 
-                    if ( ( user.TeamRole.Length == 0 ) && ( user.webpages_Roles.Count == 0 ) )
+                    if ( ( ( user.TeamRole == null ) || ( user.TeamRole.Length == 0 ) ) && ( user.webpages_Roles.Count == 0 ) )
                     {
                         <td>@user.FullName (@user.Email)</td>
                     }
