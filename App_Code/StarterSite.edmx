@@ -57,6 +57,7 @@
           <Property Name="Us" Type="int" Nullable="false" />
           <Property Name="Them" Type="int" Nullable="false" />
           <Property Name="Complete" Type="bit" Nullable="false" />
+          <Property Name="Lane" Type="bit" />
         </EntityType>
         <EntityType Name="Score">
           <Key>
@@ -227,6 +228,7 @@
           <Property Name="Us" Type="Int32" Nullable="false" />
           <Property Name="Them" Type="Int32" Nullable="false" />
           <Property Name="Complete" Type="Boolean" Nullable="false" />
+          <Property Name="Lane" Type="Boolean" />
         </EntityType>
         <EntityType Name="Score">
           <Key>
@@ -366,6 +368,7 @@
           <EntitySetMapping Name="Games">
             <EntityTypeMapping TypeName="StarterSiteModel.Game">
               <MappingFragment StoreEntitySet="Game">
+                <ScalarProperty Name="Lane" ColumnName="Lane" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="Opponents" ColumnName="Opponents" />
                 <ScalarProperty Name="Date" ColumnName="Date" />

@@ -67,9 +67,9 @@
 						<tr>
 							<td class="tdNoPad">
 								<a href="@Href( "~/Game", game.Id, matchPlay )">
-									@( string.Format( " {0:ddd d}{1} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
+									@( string.Format( " {0:ddd d}{1} {2} {3}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
 									( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
-									( game.Late == false ? "Early" : "Late" ) ) )
+									( game.Late == false ? "Early" : "Late" ), ( ( game.Complete == true ) ? "" : game.Lane == false ? "Left" : "Right" ) ) )
 								</a>
 							</td>
 							<td class="tdNoPad"><a href="@Href( "~/Game", game.Id, matchPlay )">@game.Opponents</a></td>

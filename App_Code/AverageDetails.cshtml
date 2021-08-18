@@ -1,4 +1,5 @@
-﻿@functions
+﻿@using WebMatrix.Data
+@functions
 {
     //
     // The Averages class contains a set of averages associated with a Game
@@ -143,12 +144,15 @@
         {
             Averages createdAverages = new Averages();
 
-            IEnumerable< dynamic >players = db.Query( "SELECT * FROM UserProfile WHERE ( TeamRole <> 'Spare' ) AND ( TeamRole <> 'Retired' )" );
+            IEnumerable< dynamic >players = db.Query( "SELECT * FROM UserProfile" );
             foreach ( dynamic player in players )
             {
-                Average newAverage = new Average();
-                newAverage.PlayerId = player.UserId;
-                createdAverages.AverageCollection.Add( newAverage );
+                if ( (player.TeamRole != "Spare") && (player.TeamRole != "Retired" ) )
+                {
+                    Average newAverage = new Average();
+                    newAverage.PlayerId = player.UserId;
+                    createdAverages.AverageCollection.Add( newAverage );
+                }
             }
 
             return createdAverages;

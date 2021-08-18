@@ -35,13 +35,13 @@
 	//
 	// String representation of a leg score
 	//
-	string GameDateString( DateTime gameDate, bool late )
+	string GameDateString( DateTime gameDate, bool late, bool lane )
 	{
 		int gameDay = gameDate.Day;
 
-		return string.Format( "{0:ddd d}{1} {0:MMM yyyy} {2}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
+		return string.Format( "{0:ddd d}{1} {0:MMM yyyy} {2} {3}", gameDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
 					  ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ),
-					  ( late == false ? "Early" : "Late" ) );
+					  ( late == false ? "Early" : "Late" ), ( lane == false ? "Left" : "Right" ) );
 	}
 
 	//
@@ -80,7 +80,7 @@
                 Competition nextGameLeague = model.Competitions.Where( league => league.Id == nextGame.Competition ).Single();
 
                 <tr>
-                    <td class="tdNoPad"><strong>@GameDateString( nextGame.Date, nextGame.Late.GetValueOrDefault() )</strong></td>
+                    <td class="tdNoPad"><strong>@GameDateString( nextGame.Date, nextGame.Late.GetValueOrDefault(), nextGame.Lane.GetValueOrDefault() )</strong></td>
                     <td class="tdNoPad">against <a href="@Href( "~/Game", nextGame.Id, nextGameLeague.Matchplay )">@nextGame.Opponents</a></td>
                     <td class="non-mobile tdNoPad">in <a href="@Href( "~/Competition", nextGameLeague.Id, nextGameLeague.Name, nextGameLeague.Matchplay, nextGameLeague.Locked )">@nextGameLeague.Name</a></td>
                 </tr>

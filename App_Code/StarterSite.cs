@@ -56,6 +56,7 @@ public partial class Game
     public int Us { get; set; }
     public int Them { get; set; }
     public bool Complete { get; set; }
+    public Nullable<bool> Lane { get; set; }
 }
 
 public partial class Score
