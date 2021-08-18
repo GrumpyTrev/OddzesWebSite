@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<Game>
+		<Opponents>Buckpassers</Opponents>
+		<Date>Tuesday 7th September</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Sloggers</Opponents>
+		<Date>Monday 13th September</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Chippenham 6</Opponents>
+		<Date>Monday 20th September</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Moonrakers</Opponents>
+		<Date>Tuesday 28th September</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Ramblers</Opponents>
+		<Date>Tuesday 5th October</Date>
+		<Late>Late</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>CPDP</Opponents>
+		<Date>Tuesday 12th October</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Dashpots (C1)</Opponents>
+		<Date>Tuesday 19th October</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>2nd Round (C1)</Opponents>
+		<Date>Tuesday 26th October</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Quarter Finals (C1)</Opponents>
+		<Date>Thursday 28th October</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Spare On</Opponents>
+		<Date>Thursday 11th November</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Barrackers</Opponents>
+		<Date>Thursday 18th November</Date>
+		<Late>Late</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Nondescripts</Opponents>
+		<Date>Thursday 25th November</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>2nd Round (C2)</Opponents>
+		<Date>Tuesday 14th December</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Quarter Finals (C2)</Opponents>
+		<Date>Thursday 16th December</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Haymakers</Opponents>
+		<Date>Tuesday 4th January</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Diehards</Opponents>
+		<Date>Thursday 20th January</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Norfolk in Chance</Opponents>
+		<Date>Thursday 27th January</Date>
+		<Late>Late</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Dashpots</Opponents>
+		<Date>Thursday 3rd February</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Anonymous</Opponents>
+		<Date>Tuesday 8th February</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Ramblers (C3)</Opponents>
+		<Date>Monday 14th February</Date>
+		<Late>Late</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>2nd Round (C3)</Opponents>
+		<Date>Tuesday 22nd February</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Quarter Finals (C3)</Opponents>
+		<Date>Thursday 24th February</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Do Boys</Opponents>
+		<Date>Tuesday 1st March</Date>
+		<Late>Late</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Misfits</Opponents>
+		<Date>Tuesday 8th March</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>FPM</Opponents>
+		<Date>Tuesday 15th March</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Flip Floppers</Opponents>
+		<Date>Thursday 24th March</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Woodbine</Opponents>
+		<Date>Monday 28th March</Date>
+		<Late>Late</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Harvesters</Opponents>
+		<Date>Tuesday 5th April</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Outsiders</Opponents>
+		<Date>Monday 11th April</Date>
+		<Late>Late</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Jackfinders</Opponents>
+		<Date>Monday 25th April</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Spivs</Opponents>
+		<Date>Monday 9th May</Date>
+		<Late>Early</Late>
+		<Lane>Left</Lane>
+	</Game>
+	<Game>
+		<Opponents>Gold Tops</Opponents>
+		<Date>Monday 16th May</Date>
+		<Late>Early</Late>
+		<Lane>Right</Lane>
+	</Game>
+	<Game>
+		<Opponents>Semi Finals/Finals (C1)</Opponents>
+		<Date>Monday 23rd May</Date>
+	</Game>
+	<Game>
+		<Opponents>Semi Finals/Finals (C2)</Opponents>
+		<Date>Tuesday 24th May</Date>
+	</Game>
+	<Game>
+		<Opponents>Semi Finals/Finals (C3)</Opponents>
+		<Date>Thursday 26th May</Date>
+	</Game>
+</Root>
