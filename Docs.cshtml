@@ -49,7 +49,7 @@
             <h1>@Page.Title.</h1>
         </hgroup>
         <p>
-            The following documents (mainly rules) are available to view.
+            The following documents are available to view.
         </p>
     </div>
 </section>
@@ -77,14 +77,25 @@
     {
         var selectedCount = 0;
 
-        for (var index = 0; index < document.documentForm.selected.length; index++)
+        // Check for just a single entry in which case 'length' is undefined
+        if (document.documentForm.selected.length > 1)
         {
-            if (document.documentForm.selected[index].checked == true)
+            for (var index = 0; index < document.documentForm.selected.length; index++)
+            {
+                if (document.documentForm.selected[index].checked == true)
+                {
+                    selectedCount++;
+                }
+            }
+        }
+        else
+        {
+            if (document.documentForm.selected.checked == true)
             {
                 selectedCount++;
             }
         }
-
+ 
         return selectedCount;
     }
 

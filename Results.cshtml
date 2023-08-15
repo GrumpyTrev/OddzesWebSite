@@ -3,7 +3,10 @@
     Page.Title = "Results";
 
     StarterSiteEntities model = new StarterSiteEntities();
-    IQueryable<Competition> leagues = model.Competitions.Where( league => ( league.Archive == false ) ).OrderBy( league => league.Id );
+
+    // Show the current competitions first
+    IQueryable<Competition> currentLeagues = model.Competitions.Where( league => ( league.Archive == false ) && ( league.Locked == false ) ).OrderBy( league => league.Id );
+    IQueryable<Competition> loackedLeagues = model.Competitions.Where( league => ( league.Archive == false ) && ( league.Locked == true )).OrderBy( league => league.Id );
 }
 
 @section featured { 
@@ -13,15 +16,26 @@
             <h1>@Page.Title.</h1>
         </hgroup>
         <p>
-            Data is available for the following skittles leagues.<br>
-            Click on a league to display further details.
+            Data is available for the following skittles competitions.<br>
+            Click on a competition to display further details.
         </p>
     </div>
 </section>
 }
 
+<h3>Current competitions</h3>
 <table>
-    @foreach( Competition league in leagues )
+    @foreach( Competition league in currentLeagues )
+    {
+        <tr>
+            <td><a href="@Href( "~/Competition", league.Id, league.Name, league.Matchplay, league.Locked )">@league.Name</a></td>
+        </tr>
+    }
+</table>
+
+<h3>Previous competitions</h3>
+<table>
+    @foreach( Competition league in loackedLeagues )
     {
         <tr>
             <td><a href="@Href( "~/Competition", league.Id, league.Name, league.Matchplay, league.Locked )">@league.Name</a></td>
