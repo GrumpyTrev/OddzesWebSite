@@ -28,25 +28,25 @@ namespace CalendarExport
             {
                 using ( var context = new StarterSiteContext( connection ) )
                 {
-                    Competition league = context.Competitions.Single( comp => comp.Name == "2021 - 2022 League" );
-                    Competition cup1 = context.Competitions.Single( comp => comp.Name == "Cup 1 2021" );
-                    Competition cup2 = context.Competitions.Single( comp => comp.Name == "Cup 2 2021" );
-                    Competition cup3 = context.Competitions.Single( comp => comp.Name == "Cup 3 2021" );
+                    Competition league = context.Competitions.Single( comp => comp.Name == "2024 - 2025 League" );
+                    Competition cup1 = context.Competitions.Single( comp => comp.Name == "Cazalet Cup 2024" );
+                    Competition cup2 = context.Competitions.Single( comp => comp.Name == "Haymakers Cup 2024" );
+                    Competition cup3 = context.Competitions.Single( comp => comp.Name == "Front Pin First 2024" );
 
                     // Get all the games for each of these competitions and add to list
                     games.AddRange( context.Games.Where( game => game.Competition == league.Id ) );
 
                     // Must adjust name of opponents to include the cup name
                     List<Game> cup1Games = context.Games.Where( game => game.Competition == cup1.Id ).ToList();
-                    cup1Games.ForEach( game => game.Opponents += " (C1)" );
+                    cup1Games.ForEach( game => game.Opponents += " (C)" );
                     games.AddRange( cup1Games );
 
                     List<Game> cup2Games = context.Games.Where( game => game.Competition == cup2.Id ).ToList();
-                    cup2Games.ForEach( game => game.Opponents += " (C2)" );
+                    cup2Games.ForEach( game => game.Opponents += " (H)" );
                     games.AddRange( cup2Games );
 
                     List<Game> cup3Games = context.Games.Where( game => game.Competition == cup3.Id ).ToList();
-                    cup3Games.ForEach( game => game.Opponents += " (C3)" );
+                    cup3Games.ForEach( game => game.Opponents += " (F)" );
                     games.AddRange( cup3Games );
                 }
             }
