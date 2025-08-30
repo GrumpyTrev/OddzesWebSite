@@ -28,41 +28,45 @@
                 <section class="site-title">
                     <a href="~/">Oddzes</a>
                 </section>
-                <section id="login">
-                    @if ( WebSecurity.IsAuthenticated == true ) 
-                    {
-                        // On large screen have a more verbose logged on user section. On mobiles replace with a dropdown menu
-                        <div class="non-mobile">
-                            <strong>Hello <a class="email" href="~/Account/Manage" title="Manage">@WebSecurity.CurrentUserName</a></strong>
-                            <a href="~/Account/Logout" class="btn">Log out</a>
-                            @if ( Roles.IsUserInRole( "Admin" ) == true )
-                            {
-                                <a href="~/Account/Register" class="btn">Register</a>
-                                <a href="~/Download" class="btn">Download Db</a>
-                            }
-                        </div>
-                        <div class="mobile dropdown">
-                            <div class="dropbtn" onclick="">@WebSecurity.CurrentUserName</div>
-                            <div class="dropdown-content">
-                                <a href="~/Account/Logout">Log out</a>
-                                <a href="~/Account/Manage">Manage</a>
+                <! Only show the menu options on the Contact screen>
+                @if ( Page.Title == "Contact" )
+                {
+                    <section id="login">
+                        @if ( WebSecurity.IsAuthenticated == true )
+                        {
+                            // On large screen have a more verbose logged on user section. On mobiles replace with a dropdown menu
+                            <div class="non-mobile">
+                                <strong>Hello <a class="email" href="~/Account/Manage" title="Manage">@WebSecurity.CurrentUserName</a></strong>
+                                <a href="~/Account/Logout" class="btn">Log out</a>
                                 @if ( Roles.IsUserInRole( "Admin" ) == true )
                                 {
-                                    <a href="~/Account/Register">Register</a>
-                                    <a href="~/Download">Download Db</a>
+                                    <a href="~/Account/Register" class="btn">Register</a>
+                                    <a href="~/Download" class="btn">Download Db</a>
                                 }
                             </div>
-                        </div>
-                    } 
-                    else 
-                    {
-                        // Don't show the login button on the login page
-                        if ( Page.Title != "Log in" )
-                        {
-                            <a href="~/Account/Login" class="btn">Log in</a>
+                            <div class="mobile dropdown">
+                                <div class="dropbtn" onclick="">@WebSecurity.CurrentUserName</div>
+                                <div class="dropdown-content">
+                                    <a href="~/Account/Logout">Log out</a>
+                                    <a href="~/Account/Manage">Manage</a>
+                                    @if ( Roles.IsUserInRole( "Admin" ) == true )
+                                    {
+                                        <a href="~/Account/Register">Register</a>
+                                        <a href="~/Download">Download Db</a>
+                                    }
+                                </div>
+                            </div>
                         }
-                    }
-                </section>
+                        else
+                        {
+                            // Don't show the login button on the login page
+                            if ( Page.Title != "Log in" )
+                            {
+                                <a href="~/Account/Login" class="btn">Log in</a>
+                            }
+                        }
+                    </section>
+                }
                 <nav style="clear:both">
                     <ul id="menu">
                         <li><a href="~/">Home</a></li>

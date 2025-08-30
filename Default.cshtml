@@ -135,7 +135,7 @@ else
     @foreach ( UserProfile user in model.UserProfiles )
     {
         // Don't list the ANO1, ANO2 etc members
-        if ( user.TeamRole != "Spare" )
+        if ( ( user.TeamRole != "Spare" ) && ( user.TeamRole != "NotAvailable" ) )
         {
             <tr>
                 @{ 
@@ -145,18 +145,12 @@ else
                     }
                     else
                     {
-                        string roleString = string.Join( ", ", Array.ConvertAll( user.webpages_Roles.ToArray(), x => x.RoleName ) );
+                        string roleString = (user.TeamRole.Length > 0) ? " - " + user.TeamRole : "";
 
-                        if ( user.TeamRole.Length > 0 )
-                        {
-                            roleString = ( roleString.Length > 0 ) ? user.TeamRole + ", " + roleString : user.TeamRole;
-                        }
-
-                        <td>@user.FullName (@user.Email) - @roleString</td>
+                        <td>@user.FullName (@user.Email)@roleString</td>
                     }
                 }
             </tr>}
     }
 </table>
 
-<p>Team members who are also "Scorers" can log in to record the scores for a game</p>
