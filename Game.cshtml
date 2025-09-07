@@ -1,185 +1,185 @@
 ﻿@{
-	Layout = "~/_SiteLayout.cshtml";
+    Layout = "~/_SiteLayout.cshtml";
 
-	int gameId = UrlData[ 0 ].AsInt();
-	bool matchPlay = UrlData[ 1 ].AsBool();
+    int gameId = UrlData[ 0 ].AsInt();
+    bool matchPlay = UrlData[ 1 ].AsBool();
 
-	StarterSiteEntities model = new StarterSiteEntities();
+    StarterSiteEntities model = new StarterSiteEntities();
 
-	Database db = Database.Open( "StarterSite" );
-	GameDetails.Game gameDetails = GameDetails.Game.Deserialise( db, gameId );
+    Database db = Database.Open( "StarterSite" );
+    GameDetails.Game gameDetails = GameDetails.Game.Deserialise( db, gameId );
 
-	// Get all the user names to populate the dropdown list
-	// TO DO - Order the player list so that the ANO players are at the end.
-	IEnumerable< dynamic > users = db.Query( "SELECT * FROM UserProfile WHERE TeamRole <> 'Retired'" );
+    // Get all the user names to populate the dropdown list. Add the ANO players at the end
+    List<UserProfile> users = model.UserProfiles.Where( profile => ( profile.TeamRole != "NotAvailable" ) && (profile.TeamRole != "Spare") ).ToList();
+    users.AddRange( model.UserProfiles.Where( profile => ( profile.TeamRole == "Spare") ) );
 
-	if ( gameDetails != null )
-	{
-		Page.Title = gameDetails.Opponents + " on " + gameDetails.Date.ToLongDateString();
+    if ( gameDetails != null )
+    {
+        Page.Title = gameDetails.Opponents + " on " + gameDetails.Date.ToLongDateString();
 
-		// If this is a POST request, validate and process data
-		if ( IsPost == true )
-		{
-			// Check for 'action' values first
-			if ( Request[ "action" ] == "Delete game" )
-			{
-				// Delete the entry specified by the gameId and go back to the Results page for the league
-				// Delete any averages associated with the game
-				db.Execute( "DELETE FROM Average WHERE Game=@0", gameId );
+        // If this is a POST request, validate and process data
+        if ( IsPost == true )
+        {
+            // Check for 'action' values first
+            if ( Request[ "action" ] == "Delete game" )
+            {
+                // Delete the entry specified by the gameId and go back to the Results page for the league
+                // Delete any averages associated with the game
+                db.Execute( "DELETE FROM Average WHERE Game=@0", gameId );
 
-				// Delete each set and its scores
-				for ( int index = 0; index < 2; ++index )
-				{
-					GameDetails.SetData setData = gameDetails.Sets[ index ];
-					if ( setData != null )
-					{
-						foreach ( GameDetails.Score gameScore in setData.Scores )
-						{
-							db.Execute( "DELETE FROM Score WHERE Id=@0", gameScore.Identity );
-						}
+                // Delete each set and its scores
+                for ( int index = 0; index < 2; ++index )
+                {
+                    GameDetails.SetData setData = gameDetails.Sets[ index ];
+                    if ( setData != null )
+                    {
+                        foreach ( GameDetails.Score gameScore in setData.Scores )
+                        {
+                            db.Execute( "DELETE FROM Score WHERE Id=@0", gameScore.Identity );
+                        }
 
-						db.Execute( "DELETE FROM Sets WHERE Id=@0", setData.Identity );
-					}
-				}
+                        db.Execute( "DELETE FROM Sets WHERE Id=@0", setData.Identity );
+                    }
+                }
 
-				// Finally the game
-				db.Execute( "DELETE FROM Game WHERE Id=@0", gameId );
+                // Finally the game
+                db.Execute( "DELETE FROM Game WHERE Id=@0", gameId );
 
-				if ( Session[ "previousUrl" ] != null )
-				{
-					Response.Redirect( Session[ "previousUrl" ].ToString() );
-				}
-			}
-			else if ( Request[ "action" ] == "Game finished" )
-			{
-				// Close this game
-				db.Execute( "UPDATE Game SET InProgress=0 WHERE Id=@0", gameId );
+                if ( Session[ "previousUrl" ] != null )
+                {
+                    Response.Redirect( Session[ "previousUrl" ].ToString() );
+                }
+            }
+            else if ( Request[ "action" ] == "Game finished" )
+            {
+                // Close this game
+                db.Execute( "UPDATE Game SET InProgress=0 WHERE Id=@0", gameId );
 
-				// If the last score on set 2 has been set then mark this game as complete
-				if ( gameDetails.Sets[ 1 ].Scores[ 5 ].Legs[ 2 ] != -1 )
-				{
-					db.Execute( "UPDATE Game SET Complete=1 WHERE Id=@0", gameId );
-				}
+                // If the last score on set 2 has been set then mark this game as complete
+                if ( gameDetails.Sets[ 1 ].Scores[ 5 ].Legs[ 2 ] != -1 )
+                {
+                    db.Execute( "UPDATE Game SET Complete=1 WHERE Id=@0", gameId );
+                }
 
-				Response.Redirect( Request.RawUrl );
-			}
-			else if ( Request[ "action" ] == "Record scores" )
-			{
-				// Close any existing game in progress
-				if ( gameDetails.OtherGameInProgress != null )
-				{
-					db.Execute( "UPDATE Game SET InProgress=0 WHERE Id=@0", gameDetails.OtherGameInProgress.Id );
-				}
+                Response.Redirect( Request.RawUrl );
+            }
+            else if ( Request[ "action" ] == "Record scores" )
+            {
+                // Close any existing game in progress
+                if ( gameDetails.OtherGameInProgress != null )
+                {
+                    db.Execute( "UPDATE Game SET InProgress=0 WHERE Id=@0", gameDetails.OtherGameInProgress.Id );
+                }
 
-				// Open this game for editing
-				db.Execute( "UPDATE Game SET InProgress=1 WHERE Id=@0", gameId );
+                // Open this game for editing
+                db.Execute( "UPDATE Game SET InProgress=1 WHERE Id=@0", gameId );
 
-				gameDetails.InitialiseGame( db );
+                gameDetails.InitialiseGame( db );
 
-				Response.Redirect( Request.RawUrl );
-			}
-			else if ( Request[ "action" ] == "Copy players from Set 1" )
-			{
-				gameDetails.CopyPlayersFromSet1( db );
+                Response.Redirect( Request.RawUrl );
+            }
+            else if ( Request[ "action" ] == "Copy players from Set 1" )
+            {
+                gameDetails.CopyPlayersFromSet1( db );
 
-				Response.Redirect( Request.RawUrl );
-			}
-			else
-			{
-				// Look for a player name change
-				string playerName = Request[ "player" ];
-				if ( string.IsNullOrEmpty( playerName ) == false )
-				{
-					int set = Request[ "set" ].AsInt();
-					int score = Request[ "score" ].AsInt();
-					gameDetails.SetPlayerName( db, set, score, playerName );
+                Response.Redirect( Request.RawUrl );
+            }
+            else
+            {
+                // Look for a player name change
+                string playerName = Request[ "player" ];
+                if ( string.IsNullOrEmpty( playerName ) == false )
+                {
+                    int set = Request[ "set" ].AsInt();
+                    int score = Request[ "score" ].AsInt();
+                    gameDetails.SetPlayerName( db, set, score, playerName );
 
-					// Reload the page
-					Response.Redirect( Request.RawUrl );
-				}
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
 
-				// Look for a score change
-				if ( string.IsNullOrEmpty( Request[ "pins" ] ) == false )
-				{
-					int pins = Request[ "pins" ].AsInt();
-					int set = Request[ "set" ].AsInt();
-					int score = Request[ "score" ].AsInt();
-					int leg = Request[ "leg" ].AsInt();
+                // Look for a score change
+                if ( string.IsNullOrEmpty( Request[ "pins" ] ) == false )
+                {
+                    int pins = Request[ "pins" ].AsInt();
+                    int set = Request[ "set" ].AsInt();
+                    int score = Request[ "score" ].AsInt();
+                    int leg = Request[ "leg" ].AsInt();
 
-					// Get the old value for this score and use it to update the associated average
-					int previousScore = gameDetails.Sets[ set ].Scores[ score ].Legs[ leg ];
-					if ( previousScore != pins )
-					{
-						// Average for the specified player needs updating - need to find the associated record in the gameDetails
-						int scorePlayerId = gameDetails.Sets[ set ].Scores[ score ].PlayerId;
-						List< AverageDetails.Average>.Enumerator enumerator = gameDetails.Averages.AverageCollection.GetEnumerator();
-						AverageDetails.Average avgToUpdate = null;
+                    // Get the old value for this score and use it to update the associated average
+                    int previousScore = gameDetails.Sets[ set ].Scores[ score ].Legs[ leg ];
+                    if ( previousScore != pins )
+                    {
+                        // Average for the specified player needs updating - need to find the associated record in the gameDetails
+                        int scorePlayerId = gameDetails.Sets[ set ].Scores[ score ].PlayerId;
+                        List< AverageDetails.Average>.Enumerator enumerator = gameDetails.Averages.AverageCollection.GetEnumerator();
+                        AverageDetails.Average avgToUpdate = null;
 
-						while ( ( avgToUpdate == null ) && ( enumerator.MoveNext() == true ) )
-						{
-							if ( enumerator.Current.PlayerId == scorePlayerId )
-							{
-								avgToUpdate = enumerator.Current;
-							}
-						}
+                        while ( ( avgToUpdate == null ) && ( enumerator.MoveNext() == true ) )
+                        {
+                            if ( enumerator.Current.PlayerId == scorePlayerId )
+                            {
+                                avgToUpdate = enumerator.Current;
+                            }
+                        }
 
-						if ( avgToUpdate != null )
-						{
-							avgToUpdate.UpdateScore( db, previousScore, pins );
-						}
-					}
+                        if ( avgToUpdate != null )
+                        {
+                            avgToUpdate.UpdateScore( db, previousScore, pins );
+                        }
+                    }
 
-					gameDetails.SetScore( db, set, score, leg, pins );
+                    gameDetails.SetScore( db, set, score, leg, pins );
 
-					// Reload the page
-					Response.Redirect( Request.RawUrl );
-				}
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
 
-				string pointsString = Request[ "points" ];
-				if ( string.IsNullOrEmpty( pointsString ) == false )
-				{
-					decimal points = ( decimal )( ( pointsString == "0" ) ? 0.0 : ( ( pointsString == "1" ) ? 1.0 : 0.5 ) );
-					int set = Request[ "set" ].AsInt();
-					int score = Request[ "score" ].AsInt();
-					int leg = Request[ "leg" ].AsInt();
+                string pointsString = Request[ "points" ];
+                if ( string.IsNullOrEmpty( pointsString ) == false )
+                {
+                    decimal points = ( decimal )( ( pointsString == "0" ) ? 0.0 : ( ( pointsString == "1" ) ? 1.0 : 0.5 ) );
+                    int set = Request[ "set" ].AsInt();
+                    int score = Request[ "score" ].AsInt();
+                    int leg = Request[ "leg" ].AsInt();
 
-					gameDetails.SetPoints( db, set, score, leg, points );
+                    gameDetails.SetPoints( db, set, score, leg, points );
 
-					// Reload the page
-					Response.Redirect( Request.RawUrl );
-				}
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
 
-				// Look for a total score for us change
-				if ( string.IsNullOrEmpty( Request[ "usScore" ] ) == false )
-				{
-					int usScore = Request[ "usScore" ].AsInt();
+                // Look for a total score for us change
+                if ( string.IsNullOrEmpty( Request[ "usScore" ] ) == false )
+                {
+                    int usScore = Request[ "usScore" ].AsInt();
 
-					gameDetails.SetUsScore( db, usScore );
+                    gameDetails.SetUsScore( db, usScore );
 
-					// Reload the page
-					Response.Redirect( Request.RawUrl );
-				}
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
 
-				// Look for a total score for them change
-				if ( string.IsNullOrEmpty( Request[ "themScore" ] ) == false )
-				{
-					int themScore = Request[ "themScore" ].AsInt();
+                // Look for a total score for them change
+                if ( string.IsNullOrEmpty( Request[ "themScore" ] ) == false )
+                {
+                    int themScore = Request[ "themScore" ].AsInt();
 
-					gameDetails.SetThemScore( db, themScore );
+                    gameDetails.SetThemScore( db, themScore );
 
-					// Reload the page
-					Response.Redirect( Request.RawUrl );
-				}
-			}
-		}
-		else
-		{
-			if ( Request.UrlReferrer != null )
-			{
-				Session[ "previousUrl" ] = Request.UrlReferrer.ToString();
-			}
-		}
-	}
+                    // Reload the page
+                    Response.Redirect( Request.RawUrl );
+                }
+            }
+        }
+        else
+        {
+            if ( Request.UrlReferrer != null )
+            {
+                Session[ "previousUrl" ] = Request.UrlReferrer.ToString();
+            }
+        }
+    }
 }
 
 @section featured
@@ -298,10 +298,10 @@
 						playerError[ scoreIndex ] = "";
 
                         // Check if player name is specified and unique
-                        if ( ( playerScore.PlayerId == -1) || ( playerSet.Contains( playerScore.PlayerName ) == true ) )
+                        if ( ( playerScore.PlayerId == -1 ) || ( playerSet.Contains( playerScore.PlayerName ) == true ) )
                         {
                             playersValid = false;
-                            if (  playerScore.PlayerId != -1 )
+                            if ( playerScore.PlayerId != -1 )
                             {
                                 playerError[ scoreIndex ] = "Duplicate player name";
                             }
@@ -335,9 +335,8 @@
                             <tr>
                                 <td>
                                     @{  // Create a list of player names with the current value selected
-                                        List<SelectListItem> playerItems = ( model.UserProfiles.Select(
-											user => new SelectListItem { Value = user.Email, Text = user.Email,
-												Selected = ( user.Email == playerScore.PlayerName ) ? true : false } ) ).ToList();
+                                        List<SelectListItem> playerItems = ( users.Select( user => new SelectListItem 
+                                        { Value = user.Email, Text = user.Email, Selected = ( user.Email == playerScore.PlayerName ) ? true : false } ) ).ToList();
 
                                         // If no player selected add an empty entry to the front and select it
                                         if ( playerScore.PlayerId == -1 )
@@ -359,9 +358,9 @@
 
 										<td>
                                             @{  // Create a list of possible scores with the current value selected
-												List<SelectListItem> scoreItems = ( Enumerable.Range( 0, 28 ).Select(
-													score => new SelectListItem { Value = score.ToString(), Text = score.ToString(),
-														Selected = ( score == playerScore.Legs[ legIndex ] ) ? true : false } ) ).ToList();
+												List<SelectListItem> scoreItems = ( Enumerable.Range( 0, 28 ).Select( score => new SelectListItem 
+                                                    { Value = score.ToString(), Text = score.ToString(), 
+                                                      Selected = ( score == playerScore.Legs[ legIndex ] ) ? true : false } ) ).ToList();
 
 												// If no score has been selected then add an empty entry to the front of the list
 												if ( playerScore.Legs[ legIndex ] == -1 )
@@ -389,7 +388,7 @@
 
 												}
 												@Html.DropDownList( dropName, pointsItems,
-												new { onChange = string.Format( "setPoints( '{0}', {1}, {2}, {3} );", dropName, index, scoreIndex, legIndex ) } )
+												    new { onChange = string.Format( "setPoints( '{0}', {1}, {2}, {3} );", dropName, index, scoreIndex, legIndex ) } )
 											 </td>
 										}
 									}
@@ -451,23 +450,16 @@
 					List<SelectListItem> ourScoreItems = null;
 					if ( matchPlay == true )
 					{
-						ourScoreItems = ( Enumerable.Range( 0, 77 ).Select( x => (decimal)x/2 ).Select(
-							score => new SelectListItem {
-								Value = ( ( int )( score * 2 ) ).ToString(),
-								Text = score.ToString(),
-								Selected = ( (int)( score * 2 ) == gameDetails.Us ) ? true : false
-							} ) ).ToList();
+						ourScoreItems = ( Enumerable.Range( 0, 77 ).Select( x => (decimal)x/2 ).Select( score => new SelectListItem 
+                            { Value = ( ( int )( score * 2 ) ).ToString(), Text = score.ToString(), 
+                              Selected = ( (int)( score * 2 ) == gameDetails.Us ) ? true : false } ) ).ToList();
 					}
 					else
 					{
-						ourScoreItems = ( Enumerable.Range( 0, 19 ).Select(
-							score => new SelectListItem
-							{
-								Value = score.ToString(),
-								Text = score.ToString(),
-								Selected = ( score == gameDetails.Us ) ? true : false
-							} ) ).ToList();
+						ourScoreItems = ( Enumerable.Range( 0, 19 ).Select(	score => new SelectListItem
+							{ Value = score.ToString(), Text = score.ToString(), Selected = ( score == gameDetails.Us ) ? true : false 	} ) ).ToList();
 					}
+
 					// If no score has been selected then add an empty entry to the front of the list
 					if ( gameDetails.Us == -1 )
 					{
@@ -481,21 +473,14 @@
 					List<SelectListItem> theirScoreItems = null;
 					if ( matchPlay ==  true )
 					{
-						theirScoreItems = ( Enumerable.Range( 0, 77 ).Select( x => ( decimal )x / 2 ).Select(
-							score => new SelectListItem {
-								Value = ( ( int )( score * 2 ) ).ToString(),
-								Text = score.ToString(),
-								Selected = ( ( int )( score * 2 ) == gameDetails.Them ) ? true : false
-							} ) ).ToList();
+						theirScoreItems = ( Enumerable.Range( 0, 77 ).Select( x => ( decimal )x / 2 ).Select( score => new SelectListItem 
+                            { Value = ( ( int )( score * 2 ) ).ToString(), Text = score.ToString(), 
+                              Selected = ( ( int )( score * 2 ) == gameDetails.Them ) ? true : false } ) ).ToList();
 					}
 					else
 					{
-						theirScoreItems = ( Enumerable.Range( 0, 19 ).Select(
-							score => new SelectListItem {
-								Value = score.ToString(),
-								Text = score.ToString(),
-								Selected = ( score == gameDetails.Them ) ? true : false
-							} ) ).ToList();
+						theirScoreItems = ( Enumerable.Range( 0, 19 ).Select( score => new SelectListItem
+                            { Value = score.ToString(), Text = score.ToString(), Selected = ( score == gameDetails.Them ) ? true : false } ) ).ToList();
 					}
 
 					// If no score has been selected then add an empty entry to the front of the list
@@ -518,21 +503,25 @@
             GameDetails.SetData setData = gameDetails.Sets[ index - 1 ];
             if ( setData != null )
             {
-                // Work out which player has the lowest score in this set - to be coloured 'red'
-                int lowestScore = 999;
+                // Work out which players have the lowest score in this set - to be coloured 'red'
+                int lowestScore = int.MaxValue;
                 List<string> lowestScorePlayers = new List<string>();
 
                 foreach ( GameDetails.Score playerScore in setData.Scores )
                 {
-                    if ( playerScore.Total < lowestScore )
+                    UserProfile profile = model.UserProfiles.FirstOrDefault( prof => prof.Email == playerScore.PlayerName );
+                    if ( ( profile != null ) && ( profile.TeamRole != "Spare" ) )
                     {
-                        lowestScorePlayers.Clear();
-                        lowestScore = playerScore.Total;
-                        lowestScorePlayers.Add( playerScore.PlayerName );
-                    }
-                    else if ( playerScore.Total == lowestScore )
-                    {
-                        lowestScorePlayers.Add( playerScore.PlayerName );
+                        if ( playerScore.Total < lowestScore )
+                        {
+                            lowestScorePlayers.Clear();
+                            lowestScore = playerScore.Total;
+                            lowestScorePlayers.Add( playerScore.PlayerName );
+                        }
+                        else if ( playerScore.Total == lowestScore )
+                        {
+                            lowestScorePlayers.Add( playerScore.PlayerName );
+                        }
                     }
                 }
 
@@ -553,7 +542,6 @@
                                     <td>@LegString( playerScore.Legs[ 2 ] )</td>
                                     @if ( lowestScorePlayers.Contains( playerScore.PlayerName ) == true )
                                     {
-@*                                        <td class="tdRed">@LegString( playerScore.Total )</td> *@
                                         <td><span style="background-color: #FFFF00">@LegString( playerScore.Total )</span></td>
 									}
                                     else

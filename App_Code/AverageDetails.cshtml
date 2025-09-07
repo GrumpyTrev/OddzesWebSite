@@ -147,7 +147,7 @@
             IEnumerable< dynamic >players = db.Query( "SELECT * FROM UserProfile" );
             foreach ( dynamic player in players )
             {
-                if ( (player.TeamRole != "Spare") && (player.TeamRole != "Retired" ) )
+                if ( (player.TeamRole != "Spare") && (player.TeamRole != "NotAvailable" ) )
                 {
                     Average newAverage = new Average();
                     newAverage.PlayerId = player.UserId;
