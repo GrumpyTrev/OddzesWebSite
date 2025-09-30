@@ -10,6 +10,7 @@
     string opponents = "";
     string dateString = "";
     bool late = false;
+    bool lane = false;
 
     Database db = Database.Open( "StarterSite" );
 
@@ -30,6 +31,7 @@
             DateTime date = DateTime.ParseExact( dateString, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture );
 
             late = Request.Form[ "late" ].AsBool();
+            lane = Request.Form[ "lane" ].AsBool();
 
             // Make sure that a game with the same opponents does not already exist.
             // This assumes that we don't play anyone twice. Otherwise the check will have to be for opponents and date
@@ -40,8 +42,8 @@
             else
             {
                 // Add a new entry and return to the competition page
-                db.Execute( "INSERT INTO Game (Opponents, Date, Competition, Late, Complete) VALUES (@0, @1, @2, @3, @4)", opponents, date, competitionId, 
-                    late, false );
+                db.Execute( "INSERT INTO Game (Opponents, Date, Competition, Late, Complete, Lane) VALUES (@0, @1, @2, @3, @4, @5)", opponents, date, competitionId, 
+                    late, false, lane );
                 Response.Redirect( Href( "~/Competition", competitionId, competitionName, matchPlay ) );
             }
         }
@@ -94,6 +96,10 @@
                 <li>
                     <input type="checkbox" id="late" name="late" value="true" checked="@late" />
                     <label class="checkbox" for="late">Late</label>
+                </li>
+                <li>
+                    <input type="checkbox" id="lane" name="lane" value="true" checked="@lane" />
+                    <label class="checkbox" for="lane">Right lane</label>
                 </li>
             </ol>
             <input type="submit" value="Add Game" id="submit" />
