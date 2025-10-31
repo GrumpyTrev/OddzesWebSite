@@ -28,10 +28,10 @@ namespace CalendarExport
             {
                 using ( var context = new StarterSiteContext( connection ) )
                 {
-                    Competition league = context.Competitions.Single( comp => comp.Name == "2024 - 2025 League" );
-                    Competition cup1 = context.Competitions.Single( comp => comp.Name == "Cazalet Cup 2024" );
-                    Competition cup2 = context.Competitions.Single( comp => comp.Name == "Haymakers Cup 2024" );
-                    Competition cup3 = context.Competitions.Single( comp => comp.Name == "Front Pin First 2024" );
+                    Competition league = context.Competitions.Single( comp => comp.Name == "2025 - 2026 League" );
+                    Competition cup1 = context.Competitions.Single( comp => comp.Name == "Cazalet Cup 2025" );
+                    Competition cup2 = context.Competitions.Single( comp => comp.Name == "Haymakers Cup 2025" );
+                    Competition cup3 = context.Competitions.Single( comp => comp.Name == "Front Pin First 2025" );
 
                     // Get all the games for each of these competitions and add to list
                     games.AddRange( context.Games.Where( game => game.Competition == league.Id ) );
