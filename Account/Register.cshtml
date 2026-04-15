@@ -9,12 +9,12 @@
     Page.Title = "Register";
 
     // Initialize general page variables
-    var email = "";
+    var name = "";
     var password = "";
     var confirmPassword = "";
 
     // Setup validation
-    Validation.RequireField("email", "You must specify an email address.");
+    Validation.RequireField("name", "You must specify a name.");
     Validation.RequireField("password", "Password cannot be blank.");
     Validation.Add("confirmPassword",
         Validator.EqualsTo("password", "Password and confirmation password do not match."));
@@ -27,7 +27,7 @@
     // If this is a POST request, validate and process data
     if (IsPost) {
         AntiForgery.Validate();
-        email = Request.Form["email"];
+        name = Request.Form["name"];
         password = Request.Form["password"];
         confirmPassword = Request.Form["confirmPassword"];
 
@@ -37,22 +37,22 @@
             var db = Database.Open("StarterSite");
 
             // Check if user already exists
-            var user = db.QuerySingle("SELECT Email FROM UserProfile WHERE LOWER(Email) = LOWER(@0)", email);
+            var user = db.QuerySingle("SELECT Email FROM UserProfile WHERE LOWER(Email) = LOWER(@0)", name);
             if (user == null) {
                 // Insert email into the profile table
-                db.Execute("INSERT INTO UserProfile (Email) VALUES (@0)", email);
+                db.Execute("INSERT INTO UserProfile (Email) VALUES (@0)", name);
 
                 // Create and associate a new entry in the membership database.
                 // If successful, continue processing the request
                 try {
                     bool requireEmailConfirmation = !WebMail.SmtpServer.IsEmpty();
-                    var token = WebSecurity.CreateAccount(email, password, requireEmailConfirmation);
+                    var token = WebSecurity.CreateAccount(name, password, requireEmailConfirmation);
                     if (requireEmailConfirmation) {
                         var hostUrl = Request.Url.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
                         var confirmationUrl = hostUrl + VirtualPathUtility.ToAbsolute("~/Account/Confirm?confirmationCode=" + HttpUtility.UrlEncode(token));
 
                         WebMail.Send(
-                            to: email,
+                            to: name,
                             subject: "Please confirm your account",
                             body: "Your confirmation code is: " + token + ". Visit <a href=\"" + confirmationUrl + "\">" + confirmationUrl + "</a> to activate your account."
                         );
@@ -63,7 +63,7 @@
                         Response.Redirect("~/Account/Thanks");
                     } else {
                         // Navigate back to the homepage and exit
-                        WebSecurity.Login(email, password);
+                        WebSecurity.Login(name, password);
 
                         Response.Redirect("~/");
                     }
@@ -72,7 +72,7 @@
                 }
             } else {
                 // User already exists
-                ModelState.AddFormError("Email address is already in use.");
+                ModelState.AddFormError("A user with name " + name + " already exists.");
             }
         }
     }
@@ -91,11 +91,11 @@
     <fieldset>
         <legend>Registration Form</legend>
         <ol>
-            <li class="email">
-                <label for="email" @if(!ModelState.IsValidField("email")){<text>class="error-label"</text>}>Email address</label>
-                <input type="text" id="email" name="email" value="@email" @Validation.For("email") />
-                @* Write any email validation errors to the page *@
-                @Html.ValidationMessage("email")
+            <li class="name">
+                <label for="name" @if ( !ModelState.IsValidField("name") ) { <text> class="error-label" </text> }>Name</label>
+                <input type="text" id="name" name="name" value="@name" @Validation.For("name") />
+                @* Write any name validation errors to the page *@
+                @Html.ValidationMessage("name")
             </li>
             <li class="password">
                 <label for="password" @if(!ModelState.IsValidField("password")) {<text>class="error-label"</text>}>Password</label>

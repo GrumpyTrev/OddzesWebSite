@@ -47,7 +47,8 @@
                 else
                 {
                     // Check that the user name has a scorer or admin role
-                    if ( ( Roles.IsUserInRole( email, "Scorer" ) == true ) || ( Roles.IsUserInRole( email, "Admin" ) == true ) )
+                    if ( ( Roles.IsUserInRole( email, "Scorer" ) == true ) || ( Roles.IsUserInRole( email, "Admin" ) == true ) ||
+                        ( Roles.IsUserInRole( email, "Tripper" ) == true ) )
                     {
                         // Attempt to log in using provided credentials
                         if ( WebSecurity.Login( email, password, false ) == true )
