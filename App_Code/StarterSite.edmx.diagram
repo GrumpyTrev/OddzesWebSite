@@ -16,7 +16,11 @@
         <EntityTypeShape EntityType="StarterSiteModel.webpages_OAuthMembership" Width="1.5" PointX="8.75" PointY="0.75" IsExpanded="true" />
         <EntityTypeShape EntityType="StarterSiteModel.webpages_Roles" Width="1.5" PointX="0.75" PointY="1.125" IsExpanded="true" />
         <AssociationConnector Association="StarterSiteModel.webpages_UsersInRoles" ManuallyRouted="false" />
-        <EntityTypeShape EntityType="StarterSiteModel.DocumentStorage" Width="1.5" PointX="5.375" PointY="8.75" />
+        <EntityTypeShape EntityType="StarterSiteModel.DocumentStorage" Width="1.5" PointX="4.75" PointY="6.625" />
+        <EntityTypeShape EntityType="StarterSiteModel.Trip" Width="1.5" PointX="8.75" PointY="3.25" />
+        <EntityTypeShape EntityType="StarterSiteModel.Tripper" Width="1.5" PointX="8.625" PointY="5.875" />
+        <EntityTypeShape EntityType="StarterSiteModel.Currency" Width="1.5" PointX="10.625" PointY="0.875" />
+        <EntityTypeShape EntityType="StarterSiteModel.Transaction" Width="1.5" PointX="10.625" PointY="3.625" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

@@ -34,4 +34,8 @@ public partial class StarterSiteEntities : DbContext
     public virtual DbSet<webpages_OAuthMembership> webpages_OAuthMembership { get; set; }
     public virtual DbSet<webpages_Roles> webpages_Roles { get; set; }
     public virtual DbSet<DocumentStorage> DocumentStorages { get; set; }
+    public virtual DbSet<Trip> Trips { get; set; }
+    public virtual DbSet<Tripper> Trippers { get; set; }
+    public virtual DbSet<Currency> Currencies { get; set; }
+    public virtual DbSet<Transaction> Transactions { get; set; }
 }

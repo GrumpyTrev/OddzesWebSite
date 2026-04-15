@@ -27,6 +27,17 @@
           <Property Name="KeepAverages" Type="bit" />
           <Property Name="Archive" Type="bit" Nullable="false" />
         </EntityType>
+        <EntityType Name="Currency">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="Symbol" Type="nvarchar" MaxLength="20" Nullable="false" />
+          <Property Name="Before" Type="bit" Nullable="false" />
+          <Property Name="Rate" Type="float" Nullable="false" />
+          <Property Name="RateDate" Type="datetime" Nullable="false" />
+        </EntityType>
         <EntityType Name="Documents">
           <Key>
             <PropertyRef Name="Id" />
@@ -83,6 +94,39 @@
           <Property Name="Scores4" Type="int" Nullable="false" />
           <Property Name="Scores5" Type="int" Nullable="false" />
           <Property Name="Scores6" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Transaction">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="TripId" Type="int" Nullable="false" />
+          <Property Name="Date" Type="datetime" Nullable="false" />
+          <Property Name="CurrencyId" Type="int" Nullable="false" />
+          <Property Name="Rate" Type="float" Nullable="false" />
+          <Property Name="Title" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="LocalValue" Type="float" Nullable="false" />
+          <Property Name="SterlingValue" Type="float" Nullable="false" />
+          <Property Name="WhoId" Type="int" Nullable="false" />
+          <Property Name="PaidToId" Type="int" Nullable="false" />
+          <Property Name="IsBalance" Type="bit" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Trip">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="Open" Type="bit" Nullable="false" />
+          <Property Name="Created" Type="datetime" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Trippers">
+          <Key>
+            <PropertyRef Name="UserId" />
+            <PropertyRef Name="TripId" />
+          </Key>
+          <Property Name="UserId" Type="int" Nullable="false" />
+          <Property Name="TripId" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="UserProfile">
           <Key>
@@ -160,11 +204,15 @@
         <EntityContainer Name="StarterSiteModelStoreContainer">
           <EntitySet Name="Average" EntityType="Self.Average" store:Type="Tables" />
           <EntitySet Name="Competition" EntityType="Self.Competition" store:Type="Tables" />
+          <EntitySet Name="Currency" EntityType="Self.Currency" store:Type="Tables" />
           <EntitySet Name="Documents" EntityType="Self.Documents" store:Type="Tables" />
           <EntitySet Name="DocumentStorage" EntityType="Self.DocumentStorage" store:Type="Tables" />
           <EntitySet Name="Game" EntityType="Self.Game" store:Type="Tables" />
           <EntitySet Name="Score" EntityType="Self.Score" store:Type="Tables" />
           <EntitySet Name="Sets" EntityType="Self.Sets" store:Type="Tables" />
+          <EntitySet Name="Transaction" EntityType="Self.Transaction" store:Type="Tables" />
+          <EntitySet Name="Trip" EntityType="Self.Trip" store:Type="Tables" />
+          <EntitySet Name="Trippers" EntityType="Self.Trippers" store:Type="Tables" />
           <EntitySet Name="UserProfile" EntityType="Self.UserProfile" store:Type="Tables" />
           <EntitySet Name="webpages_Membership" EntityType="Self.webpages_Membership" store:Type="Tables" />
           <EntitySet Name="webpages_OAuthMembership" EntityType="Self.webpages_OAuthMembership" store:Type="Tables" />
@@ -318,6 +366,10 @@
             <End Role="UserProfile" EntitySet="UserProfiles" />
           </AssociationSet>
           <EntitySet Name="DocumentStorages" EntityType="StarterSiteModel.DocumentStorage" />
+          <EntitySet Name="Trips" EntityType="StarterSiteModel.Trip" />
+          <EntitySet Name="Trippers" EntityType="StarterSiteModel.Tripper" />
+          <EntitySet Name="Currencies" EntityType="StarterSiteModel.Currency" />
+          <EntitySet Name="Transactions" EntityType="StarterSiteModel.Transaction" />
         </EntityContainer>
         <EntityType Name="DocumentStorage">
           <Key>
@@ -325,6 +377,50 @@
           </Key>
           <Property Name="Id" Type="Int32" Nullable="false" />
           <Property Name="Content" Type="Binary" Nullable="false" MaxLength="Max" FixedLength="false" />
+        </EntityType>
+        <EntityType Name="Trip">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="Open" Type="Boolean" Nullable="false" />
+          <Property Name="Created" Type="DateTime" Nullable="false" Precision="3" />
+        </EntityType>
+        <EntityType Name="Tripper">
+          <Key>
+            <PropertyRef Name="UserId" />
+            <PropertyRef Name="TripId" />
+          </Key>
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="TripId" Type="Int32" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Currency">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="Symbol" Type="String" Nullable="false" MaxLength="20" FixedLength="false" Unicode="true" />
+          <Property Name="Before" Type="Boolean" Nullable="false" />
+          <Property Name="Rate" Type="Double" Nullable="false" />
+          <Property Name="RateDate" Type="DateTime" Nullable="false" Precision="3" />
+        </EntityType>
+        <EntityType Name="Transaction">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TripId" Type="Int32" Nullable="false" />
+          <Property Name="Date" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="CurrencyId" Type="Int32" Nullable="false" />
+          <Property Name="Rate" Type="Double" Nullable="false" />
+          <Property Name="Title" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="LocalValue" Type="Double" Nullable="false" />
+          <Property Name="SterlingValue" Type="Double" Nullable="false" />
+          <Property Name="WhoId" Type="Int32" Nullable="false" />
+          <Property Name="PaidToId" Type="Int32" Nullable="false" />
+          <Property Name="IsBalance" Type="Boolean" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -466,6 +562,53 @@
             <EntityTypeMapping TypeName="StarterSiteModel.DocumentStorage">
               <MappingFragment StoreEntitySet="DocumentStorage">
                 <ScalarProperty Name="Content" ColumnName="Content" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Trips">
+            <EntityTypeMapping TypeName="StarterSiteModel.Trip">
+              <MappingFragment StoreEntitySet="Trip">
+                <ScalarProperty Name="Created" ColumnName="Created" />
+                <ScalarProperty Name="Open" ColumnName="Open" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Trippers">
+            <EntityTypeMapping TypeName="StarterSiteModel.Tripper">
+              <MappingFragment StoreEntitySet="Trippers">
+                <ScalarProperty Name="TripId" ColumnName="TripId" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Currencies">
+            <EntityTypeMapping TypeName="StarterSiteModel.Currency">
+              <MappingFragment StoreEntitySet="Currency">
+                <ScalarProperty Name="RateDate" ColumnName="RateDate" />
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+                <ScalarProperty Name="Before" ColumnName="Before" />
+                <ScalarProperty Name="Symbol" ColumnName="Symbol" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Transactions">
+            <EntityTypeMapping TypeName="StarterSiteModel.Transaction">
+              <MappingFragment StoreEntitySet="Transaction">
+                <ScalarProperty Name="IsBalance" ColumnName="IsBalance" />
+                <ScalarProperty Name="PaidToId" ColumnName="PaidToId" />
+                <ScalarProperty Name="WhoId" ColumnName="WhoId" />
+                <ScalarProperty Name="SterlingValue" ColumnName="SterlingValue" />
+                <ScalarProperty Name="LocalValue" ColumnName="LocalValue" />
+                <ScalarProperty Name="Title" ColumnName="Title" />
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+                <ScalarProperty Name="CurrencyId" ColumnName="CurrencyId" />
+                <ScalarProperty Name="Date" ColumnName="Date" />
+                <ScalarProperty Name="TripId" ColumnName="TripId" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>

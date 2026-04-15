@@ -30,6 +30,16 @@ public partial class Competition
     public bool Archive { get; set; }
 }
 
+public partial class Currency
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Symbol { get; set; }
+    public bool Before { get; set; }
+    public double Rate { get; set; }
+    public System.DateTime RateDate { get; set; }
+}
+
 public partial class Document
 {
     public int Id { get; set; }
@@ -80,6 +90,35 @@ public partial class Set
     public int Scores4 { get; set; }
     public int Scores5 { get; set; }
     public int Scores6 { get; set; }
+}
+
+public partial class Transaction
+{
+    public int Id { get; set; }
+    public int TripId { get; set; }
+    public System.DateTime Date { get; set; }
+    public int CurrencyId { get; set; }
+    public double Rate { get; set; }
+    public string Title { get; set; }
+    public double LocalValue { get; set; }
+    public double SterlingValue { get; set; }
+    public int WhoId { get; set; }
+    public int PaidToId { get; set; }
+    public bool IsBalance { get; set; }
+}
+
+public partial class Trip
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public bool Open { get; set; }
+    public System.DateTime Created { get; set; }
+}
+
+public partial class Tripper
+{
+    public int UserId { get; set; }
+    public int TripId { get; set; }
 }
 
 public partial class UserProfile
