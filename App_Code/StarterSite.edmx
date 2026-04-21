@@ -95,6 +95,15 @@
           <Property Name="Scores5" Type="int" Nullable="false" />
           <Property Name="Scores6" Type="int" Nullable="false" />
         </EntityType>
+        <EntityType Name="Sharer">
+          <Key>
+            <PropertyRef Name="TransactionId" />
+            <PropertyRef Name="UserId" />
+          </Key>
+          <Property Name="TransactionId" Type="int" Nullable="false" />
+          <Property Name="UserId" Type="int" Nullable="false" />
+          <Property Name="Parts" Type="int" Nullable="false" />
+        </EntityType>
         <EntityType Name="Transaction">
           <Key>
             <PropertyRef Name="Id" />
@@ -110,6 +119,7 @@
           <Property Name="WhoId" Type="int" Nullable="false" />
           <Property Name="PaidToId" Type="int" Nullable="false" />
           <Property Name="IsBalance" Type="bit" Nullable="false" />
+          <Property Name="ShareCount" Type="int" />
         </EntityType>
         <EntityType Name="Trip">
           <Key>
@@ -210,6 +220,7 @@
           <EntitySet Name="Game" EntityType="Self.Game" store:Type="Tables" />
           <EntitySet Name="Score" EntityType="Self.Score" store:Type="Tables" />
           <EntitySet Name="Sets" EntityType="Self.Sets" store:Type="Tables" />
+          <EntitySet Name="Sharer" EntityType="Self.Sharer" store:Type="Tables" />
           <EntitySet Name="Transaction" EntityType="Self.Transaction" store:Type="Tables" />
           <EntitySet Name="Trip" EntityType="Self.Trip" store:Type="Tables" />
           <EntitySet Name="Trippers" EntityType="Self.Trippers" store:Type="Tables" />
@@ -370,6 +381,7 @@
           <EntitySet Name="Trippers" EntityType="StarterSiteModel.Tripper" />
           <EntitySet Name="Currencies" EntityType="StarterSiteModel.Currency" />
           <EntitySet Name="Transactions" EntityType="StarterSiteModel.Transaction" />
+          <EntitySet Name="Sharers" EntityType="StarterSiteModel.Sharer" />
         </EntityContainer>
         <EntityType Name="DocumentStorage">
           <Key>
@@ -421,6 +433,16 @@
           <Property Name="WhoId" Type="Int32" Nullable="false" />
           <Property Name="PaidToId" Type="Int32" Nullable="false" />
           <Property Name="IsBalance" Type="Boolean" Nullable="false" />
+          <Property Name="ShareCount" Type="Int32" />
+        </EntityType>
+        <EntityType Name="Sharer">
+          <Key>
+            <PropertyRef Name="TransactionId" />
+            <PropertyRef Name="UserId" />
+          </Key>
+          <Property Name="TransactionId" Type="Int32" Nullable="false" />
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="Parts" Type="Int32" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -599,6 +621,7 @@
           <EntitySetMapping Name="Transactions">
             <EntityTypeMapping TypeName="StarterSiteModel.Transaction">
               <MappingFragment StoreEntitySet="Transaction">
+                <ScalarProperty Name="ShareCount" ColumnName="ShareCount" />
                 <ScalarProperty Name="IsBalance" ColumnName="IsBalance" />
                 <ScalarProperty Name="PaidToId" ColumnName="PaidToId" />
                 <ScalarProperty Name="WhoId" ColumnName="WhoId" />
@@ -610,6 +633,15 @@
                 <ScalarProperty Name="Date" ColumnName="Date" />
                 <ScalarProperty Name="TripId" ColumnName="TripId" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Sharers">
+            <EntityTypeMapping TypeName="StarterSiteModel.Sharer">
+              <MappingFragment StoreEntitySet="Sharer">
+                <ScalarProperty Name="Parts" ColumnName="Parts" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+                <ScalarProperty Name="TransactionId" ColumnName="TransactionId" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

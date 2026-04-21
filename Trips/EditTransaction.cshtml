@@ -1,0 +1,141 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int transId = UrlData[0].AsInt();
+    Transaction transactionToEdit = model.Transactions.Single(tran => tran.Id == transId);
+
+    Page.Title = "Edit transaction " + transactionToEdit.Title;
+
+    // Initialise general page variables
+    string title = transactionToEdit.Title;
+    string dateString = transactionToEdit.Date.ToString( "dd/MM/yyyy" );
+    string currencyName = model.Currencies.Single(cur => cur.Id == transactionToEdit.CurrencyId).Name;
+    double amount = transactionToEdit.LocalValue;
+    string who = HelperMethods.UserNameString(transactionToEdit.WhoId);
+
+    // Setup validation
+    Validation.RequireField("title", "You must specify a transaction name.");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        title = Request.Form["title"];
+        dateString = Request.Form["date"];
+
+        // Convert this string in dd/mm/yy format into a datetime to get around mobile/pc local differences
+        DateTime date = DateTime.ParseExact(dateString, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        currencyName = Request.Form["currency"];
+        amount = Double.Parse(Request.Form["amount"]);
+        who = Request.Form["who"];
+
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true )
+        {
+            // Make sure that the trip does not already contain a transaction with the same name on the same day.
+            // Apart from this transaction of course
+            if ( model.Transactions.Any( trans => ( trans.TripId == transactionToEdit.TripId ) && ( trans.Title == title ) &&
+                ( trans.Date == date ) && ( trans.Id != transId ) ) == true )
+            {
+                ModelState.AddFormError("A transaction with that title already exists on the same day");
+            }
+            else
+            {
+                // Update the transaction being edited
+                transactionToEdit.Title = title;
+                transactionToEdit.Date = date;
+                transactionToEdit.LocalValue = amount;
+                transactionToEdit.WhoId = model.UserProfiles.Single(user => user.Email == who).UserId;
+
+                // If the currency has changed then update the rate and the sterling amount
+                Currency transCurrency = model.Currencies.Single(cur => cur.Name == currencyName);
+                if ( transCurrency.Id != transactionToEdit.CurrencyId )
+                {
+                    transactionToEdit.CurrencyId = transCurrency.Id;
+                    transactionToEdit.Rate = transCurrency.Rate;
+                }
+
+                transactionToEdit.SterlingValue = amount * transactionToEdit.Rate;
+
+                model.SaveChanges();
+
+                // Return back to the trip, not the transaction
+                Response.Redirect(Href("~/Trips/Trip", transactionToEdit.TripId));
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+    $(document).ready(function()
+    {
+        $.datepicker.setDefaults( $.extend( {'dateFormat':'dd/mm/yy'}, $.datepicker.regional['uk'] ) );
+        $("#date").datepicker();
+    });
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            <p>Use the form below to edit the transaction.</p>
+        </div>
+    </section>
+}
+
+<section>
+
+    <form method="post">
+        @AntiForgery.GetHtml()
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Edit transaction</legend>
+            <ol>
+                <li>
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" value="@title" @Validation.For("title") />
+                    @Html.ValidationMessage("title")
+                </li>
+                <li>
+                    <label for="amount">Amount</label>
+                    <div class="flex-input">
+                        @{
+                            // Get a list of the available currency names
+                            List<SelectListItem> currencyItems = model.Currencies.Select(cur => new SelectListItem
+                            { Value = cur.Name, Text = cur.Name, Selected = (cur.Name ==  currencyName)}).ToList();
+                        }
+                        @Html.DropDownList("currency", currencyItems)
+
+                        <input type="number" id="amount" name="amount" step="any" min="0" value="@amount" ) />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="date">When</label>
+                        @* Make the date field read only so that on mobiles the text input widget is not displayed *@
+                        <input type="text" id="date" name="date" value="@dateString" readonly="readonly" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        @{
+                            // Get a list of the available trippers
+                            List<SelectListItem> trippers = HelperMethods.TripParticipants(transactionToEdit.TripId)
+                                .Select(tripper => new SelectListItem { Value = tripper, Text = tripper, Selected = ( tripper == who ) }).ToList();
+                        }
+
+                        <label for="who">Paid By</label>
+                        @Html.DropDownList("who", trippers)
+                    </div>
+                </li>
+            </ol>
+            <input type="submit" value="Update transaction" id="submit" />
+        </fieldset>
+    </form>
+
+</section>

@@ -1,0 +1,140 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+    Page.Title = "Trips";
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true )
+        {
+            // Look for a trip to delete
+            if ( string.IsNullOrEmpty(Request["deleteTripId"]) == false )
+            {
+                int tripId = Request["deleteTripId"].AsInt();
+
+                // Remove any transactions and tripper records associated with this trip
+                model.Trippers.RemoveRange(model.Trippers.Where(tripper => tripper.TripId == tripId));
+
+                model.Trips.Remove(model.Trips.Single(trip => trip.Id == tripId));
+
+                model.SaveChanges();
+
+                // Reload the page
+                Response.Redirect(Request.RawUrl);
+            }
+        }
+    }
+}
+
+@functions
+{
+    //
+    // String representation of a trip date
+    //
+    string TripDateString(DateTime tripDate)
+    {
+        int gameDay = tripDate.Day;
+
+        return string.Format("{0:ddd d}{1} {0:MMM yyyy}", tripDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
+                      ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ));
+    }
+}
+
+<script type="text/javascript">
+    function deleteTrip(tripId, anyTransactions, name) {
+        if (anyTransactions = true) {
+            if (confirm('Trip ' + name + ' is not empty, are you sure you want to delete it?') == true) {
+                document.getElementById('deleteTripId').value = tripId;
+                document.getElementById('tripsForm').submit();
+            }
+        }
+        else {
+            if (confirm('Are you sure you want to delete trip ' + name) == true) {
+                document.getElementById('deleteTripId').value = tripId;
+                document.getElementById('tripsForm').submit();
+            }
+        }
+    }
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                if ( model.Trips.Count() > 0 )
+                {
+                    <p>Click on a trip name to display further details</p>
+                }
+                else
+                {
+                    <p>There are no trips available</p>
+                }
+            }
+            else
+            {
+                <p>Please login to display the available trips</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    if ( model.Trips.Any() == true )
+    {
+        <form id="tripsForm" method="post">
+            @AntiForgery.GetHtml()
+
+            <input type="hidden" id="deleteTripId" name="deleteTripId" value="" />
+
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Created</th>
+                    <th>Trippers</th>
+                </tr>
+
+                @{
+                    // Display the open trips first and then the closed trips
+                    bool[] openStates = new bool[] { true, false };
+                    foreach ( bool openState in openStates )
+                    {
+                        <tr><td colspan="5" class="tdNoPad"><strong>@( openState == true ? "Open trips" : "Closed trips" )</strong></td></tr>
+
+                        foreach ( Trip trip in model.Trips.Where( trip => trip.Open == openState ) )
+                        {
+                            <tr>
+                                <td class="tdNoPad"><a href="@Href("~/Trips/Trip", trip.Id)">@trip.Name</a></td>
+                                <td class="tdNoPad">@TripDateString(trip.Created)</td>
+                                <td class="tdNoPad">@HelperMethods.TripParticipantsString(trip.Id)</td>
+                                <td class="tdNoPad">
+                                    <a href="@Href("~/Trips/EditTrip", trip.Name)" class="btn" style="height:24px; padding:0px">
+                                        <i class='material-icons'>edit</i>
+                                    </a>
+                                </td>
+                                <td class="tdNoPad">
+                                    <button class="btn" style="height:24px; padding:0px"
+                                            onclick="@string.Format("deleteTrip( {0}, '{1}', '{2}');", trip.Id,
+                                                                     model.Transactions.Any(trans => trans.TripId == trip.Id), trip.Name)"
+                                            type="button">
+                                        <i class='material-icons'>delete</i>
+                                    </button>
+                                </td>
+                            </tr>
+                            }
+                        }
+                    }
+            </table>
+        </form>
+    }
+
+    <p></p>
+    <a href="~/Trips/AddTrip" class="btn">Add trip</a>
+ }
+

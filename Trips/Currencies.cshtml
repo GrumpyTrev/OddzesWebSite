@@ -1,0 +1,108 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+    Page.Title = "Currencies";
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true )
+        {
+            // Look for a currency to delete
+            if ( string.IsNullOrEmpty(Request["deleteCurrencyId"]) == false )
+            {
+                int currencyId = Request["deleteCurrencyId"].AsInt();
+
+                model.Currencies.Remove(model.Currencies.Single(cur => cur.Id == currencyId));
+
+                model.SaveChanges();
+
+                // Reload the page
+                Response.Redirect(Request.RawUrl);
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+    function deleteCurrency(id, name) {
+        if (confirm('Are you sure you want to delete currency ' + name) == true) {
+            document.getElementById('deleteCurrencyId').value = id;
+            document.getElementById('currenciesForm').submit();
+        }
+    }
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                if ( model.Currencies.Count() > 0 )
+                {
+                    <p> Data is available for the following currencies. </p>
+                }
+                else
+                {
+                    <p>There are no currencies available</p>
+                }
+            }
+            else
+            {
+                <p>Please login to display the available currencies</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    if ( model.Currencies.Count() > 0 )
+    {
+        <form id="currenciesForm" method="post">
+            @AntiForgery.GetHtml()
+
+            <input type="hidden" id="deleteCurrencyId" name="deleteCurrencyId" value="" />
+
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th style="padding-right:5px;">Symbol</th>
+                    <th style="padding-right:5px;">Rate</th>
+                    <th>Date</th>
+                </tr>
+
+                @{
+                    foreach ( Currency currency in model.Currencies )
+                    {
+                        <tr>
+                            <td class="tdNoPad">@currency.Name</td>
+                            <td class="tdNoPad">@currency.Symbol</td>
+                            <td class="tdNoPad">@currency.Rate</td>
+                            <td class="tdNoPad">@currency.RateDate.ToShortDateString()</td>
+                            <td class="tdNoPad">
+                                <a href="@Href( "~/Trips/EditCurrency", currency.Id )" class="btn" style="height:24px; padding:0px">
+                                    <i class='material-icons'>edit</i>
+                                </a>
+                            </td>
+                            <td class="tdNoPad">
+                                <button class="btn" style="height:24px; padding:0px"
+                                        onclick="@string.Format( "deleteCurrency( {0}, '{1}');", currency.Id, currency.Name )"
+                                        type="button">
+                                    <i class='material-icons'>delete</i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </table>
+        </form>
+    }
+
+    <p></p>
+    <a href="~/Trips/AddCurrency" class="btn">Add currency</a>
+ }

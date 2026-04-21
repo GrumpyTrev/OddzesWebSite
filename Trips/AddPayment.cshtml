@@ -1,0 +1,176 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // Get the trip and user details from the URL.
+    // The URL is in the format /Trips/AddPayment/{tripId}/{userId}/{amount}/{currencyId}
+    // These details are used to pre-populate the form, and to determine which trip the payment is being added to, and who is making the payment.
+    int tripId = UrlData[0].AsInt();
+    int userId = UrlData[1].AsInt();
+    double requestAmount = Double.Parse(UrlData[2]);
+    int requestCurrencyId = UrlData[3].AsInt();
+
+    string tripName = model.Trips.Single(trip => trip.Id == tripId).Name;
+
+    Page.Title = "Add payment to trip " + tripName;
+
+    // Initialise the variables that are used to pre-populate the form fields.
+    // These will be updated if the user changes the currency or submits the form with errors.
+    string dateString = DateTime.Now.ToString("dd/MM/yyyy");
+    int currencyId = requestCurrencyId;
+    string currencyName = model.Currencies.Single(curr => curr.Id == currencyId).Name;
+    string to = "";
+    double amount = requestAmount;
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        dateString = Request.Form["date"];
+
+        // Convert this string in dd/mm/yy format into a datetime to get around mobile/pc local differences
+        DateTime date = DateTime.ParseExact(dateString, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        currencyName = Request.Form["currencyItems"];
+        currencyId = model.Currencies.Single(cur => cur.Name == currencyName).Id;
+
+        amount = Double.Parse(Request.Form["amount"]);
+        to = Request.Form["to"];
+
+        // Check for 'action' values first
+        if ( Request["action"] == "Add payment" )
+        {
+            AntiForgery.Validate();
+            if ( Validation.IsValid() == true )
+            {
+                // Add a new transaction to the trip
+                Currency transCurrency = model.Currencies.Single(cur => cur.Name == currencyName);
+                model.Transactions.Add(new Transaction
+                {
+                    Title = "Payment",
+                    Date = date,
+                    CurrencyId = transCurrency.Id,
+                    TripId = tripId,
+                    LocalValue = amount,
+                    Rate = transCurrency.Rate,
+                    SterlingValue = amount * transCurrency.Rate,
+                    IsBalance = true,
+                    WhoId = userId,
+                    PaidToId = model.UserProfiles.Single(user => user.Email == to).UserId
+                });
+                model.SaveChanges();
+                Response.Redirect(Href("~/Trips/Trip", tripId));
+            }
+        }
+        else
+        {
+            // Has there been a change to the selected currency
+            if ( string.IsNullOrEmpty(Request["currency"]) == false )
+            {
+                currencyName = Request["currency"].Split(',')[0];
+                currencyId = model.Currencies.Single(cur => cur.Name == currencyName).Id;
+                amount = HelperMethods.ConvertAmount(requestAmount, requestCurrencyId, currencyId);
+            }
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>
+                    Use the form below to add a payment record to the trip.<br>
+                    The payment record can be in any currency, and any amount.
+                </p>
+            }
+            else
+            {
+                <p>Please login to add a payment to this trip</p>
+            }
+        </div>
+    </section>
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.datepicker.setDefaults($.extend({ 'dateFormat': 'dd/mm/yy' }, $.datepicker.regional['uk']));
+        $("#date").datepicker();
+    });
+</script>
+
+<script type="text/javascript">
+    function OnCurrencyChange(selectObj) {
+        document.getElementById('currency').value = document.getElementById('currencyItems').value;
+        document.getElementById('paymentForm').submit();
+    }
+</script>
+
+@if ( WebSecurity.IsAuthenticated == true )
+{ 
+    <form id="paymentForm" method="post">
+        @AntiForgery.GetHtml()
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <input type="hidden" id="currency" name="currency" value="" />
+
+        <fieldset>
+            <legend>Add new payment</legend>
+            <ol>
+                <li>
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" readonly="readonly" value="Payment" />
+                </li>
+                <li>
+                    <label for="amount">Amount</label>
+                    <div class="flex-input">
+                        @{
+                            // Get a list of the available currency names
+                            List<SelectListItem> currencyItems = model.Currencies.Select(cur => new SelectListItem
+                            { Value = cur.Name, Text = cur.Name, Selected = cur.Id == currencyId }).ToList();
+                        }
+                        @Html.DropDownList("currencyItems", currencyItems, new { onChange = "OnCurrencyChange(this)" });
+
+                        <input type="number" id="amount" name="amount" step="any" min="0" value="@amount.ToString("F2")" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="date">When</label>
+                        @* Make the date field read only so that on mobiles the text input widget is not displayed *@
+                        <input type="text" id="date" name="date" value="@dateString" readonly="readonly" />
+                    </div>
+                    @Html.ValidationMessage("date")
+                </li>
+
+                @{
+                    List<UserProfile> users = HelperMethods.TripParticipantsUserProfiles(tripId);
+                }
+
+                <li>
+                    <div class="flex-input">
+                        <label for="from">From</label>
+                        <input type="text" id="from" name="from" readonly="readonly" value=@HelperMethods.UserNameString(userId) />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        @{
+                            // Get a list of the available trippers that can be payed. Don't include the currently selected payer
+                            List<SelectListItem> payees = users.Where(user => user.UserId != userId)
+                                .Select(user => new SelectListItem { Value = user.Email, Text = user.Email, Selected = false }).ToList();
+
+                            <label for="to">To</label>
+                            @Html.DropDownList("to", payees)
+                        }
+                    </div>
+                </li>
+            </ol>
+            <input type="submit" name="action" value="Add payment" id="fred" />
+        </fieldset>
+    </form>
+}

@@ -92,6 +92,13 @@ public partial class Set
     public int Scores6 { get; set; }
 }
 
+public partial class Sharer
+{
+    public int TransactionId { get; set; }
+    public int UserId { get; set; }
+    public int Parts { get; set; }
+}
+
 public partial class Transaction
 {
     public int Id { get; set; }
@@ -105,6 +112,7 @@ public partial class Transaction
     public int WhoId { get; set; }
     public int PaidToId { get; set; }
     public bool IsBalance { get; set; }
+    public Nullable<int> ShareCount { get; set; }
 }
 
 public partial class Trip

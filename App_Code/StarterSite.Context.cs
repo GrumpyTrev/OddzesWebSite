@@ -38,4 +38,5 @@ public partial class StarterSiteEntities : DbContext
     public virtual DbSet<Tripper> Trippers { get; set; }
     public virtual DbSet<Currency> Currencies { get; set; }
     public virtual DbSet<Transaction> Transactions { get; set; }
+    public virtual DbSet<Sharer> Sharers { get; set; }
 }

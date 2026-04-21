@@ -1,0 +1,254 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int tripId = UrlData[0].AsInt();
+    string tripName = model.Trips.Single(trip => trip.Id == tripId).Name;
+
+    Page.Title = "Add transaction to trip " + tripName;
+
+    // Initialise general page variables
+    string title = "";
+    string dateString = DateTime.Now.ToString("dd/MM/yyyy");
+    string currencyName = model.Currencies.First().Name;
+    double amount = 0;
+    string who = "";
+    string[] sharers = HelperMethods.TripParticipants(tripId).ToArray();
+    Currency transCurrency = model.Currencies.Single(cur => cur.Name == currencyName);
+
+    // Setup validation
+    Validation.RequireField("title", "You must specify a transaction name.");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        title = Request.Form["title"];
+        dateString = Request.Form["date"];
+
+        // Convert this string in dd/mm/yy format into a datetime to get around mobile/pc local differences
+        DateTime date = DateTime.ParseExact(dateString, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        currencyName = Request.Form["currency"];
+        transCurrency = model.Currencies.Single(cur => cur.Name == currencyName);
+
+        amount = Double.Parse(Request.Form["amount"]);
+        who = Request.Form["who"];
+
+        sharers = ( Request.Form["sharedBy"] != null ) ? Request.Form["sharedBy"].Split(',') : new string[0];
+
+        AntiForgery.Validate();
+
+        // Check for 'action' values first
+        if ( Request["action"] == "Add transaction" )
+        {
+            if ( Validation.IsValid() == true )
+            {
+                // Make sure that the trip does not already contain a transaction with the same name on the same day
+                if ( model.Transactions.Any(trans => ( trans.TripId == tripId ) && ( trans.Title == title ) &&
+                    ( trans.Date == date )) == true )
+                {
+                    ModelState.AddFormError("A transaction with that title already exists on the same day");
+                }
+                else
+                {
+                    // Make sure that at least one sharer has been specified
+                    if ( sharers.Count() == 0 )
+                    {
+                        ModelState.AddFormError("At least one sharer must be specified");
+                    }
+                    else
+                    {
+                        // Add a new transaction to the trip
+                        Transaction newTransaction = model.Transactions.Add(new Transaction
+                        {
+                            Title = title,
+                            Date = date,
+                            CurrencyId = transCurrency.Id,
+                            TripId = tripId,
+                            LocalValue = amount,
+                            Rate = transCurrency.Rate,
+                            SterlingValue = amount * transCurrency.Rate,
+                            IsBalance = false,
+                            WhoId = model.UserProfiles.Single(user => user.Email == who).UserId,
+                            ShareCount = sharers.Count()
+                        });
+                        model.SaveChanges();
+
+                        // Add Sharer entries for each of the sharers
+                        foreach ( string shareName in sharers )
+                        {
+                            model.Sharers.Add(new Sharer
+                            {
+                                UserId = model.UserProfiles.Single(user => user.Email == shareName).UserId,
+                                TransactionId = newTransaction.Id
+                            });
+                        }
+                        model.SaveChanges();
+
+                        Response.Redirect(Href("~/Trips/Trip", tripId));
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Has there been an amount or sharer change
+            if ( string.IsNullOrEmpty(Request["changedAmount"]) == false )
+            {
+                // No action is performed here. The form will display the new amount and divide it amongst the selected sharers
+            }
+            else if ( string.IsNullOrEmpty(Request["changedSharer"]) == false )
+            {
+                // No action is performed here. The form will display the udpated sharers and their amounts
+            }
+            else if ( string.IsNullOrEmpty(Request["changedCurrency"]) == false )
+            {
+                currencyName = Request["changedCurrency"];
+                transCurrency = model.Currencies.Single(cur => cur.Name == currencyName);
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.datepicker.setDefaults($.extend({ 'dateFormat': 'dd/mm/yy' }, $.datepicker.regional['uk']));
+        $("#date").datepicker();
+    });
+
+    function OnAmountChange() {
+        // All we need to do here is set an hidden variable to indicate that this is an amount change rather
+        // than an add.
+        document.getElementById('changedAmount').value = document.getElementById('amount').value;
+        document.getElementById('transactionForm').submit();
+    }
+
+    function OnSharerChange() {
+        // All we need to do here is set an hidden variable to indicate that this is a sharer change rather
+        // than an add.
+        document.getElementById('changedSharer').value = 'changed';
+        document.getElementById('transactionForm').submit();
+    }
+
+
+    function OnCurrencyChange() {
+        // All we need to do here is set an hidden variable to indicate that this is a currency change rather
+        // than an add.
+        document.getElementById('changedCurrency').value = document.getElementById('currency').value;
+        document.getElementById('transactionForm').submit();
+    }
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>
+                    Use the form below to add a new transaction to the trip.<br>
+                    To change the details for an existing transaction select it from the trip's page.
+                </p>
+            }
+            else
+            {
+                <p>Please login to add a new transaction</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form id="transactionForm" method="post">
+        @AntiForgery.GetHtml()
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <input type="hidden" id="changedAmount" name="changedAmount" value="" />
+        <input type="hidden" id="changedSharer" name="changedSharer" value="" />
+        <input type="hidden" id="changedCurrency" name="changedCurrency" value="" />
+
+        <fieldset>
+            <legend>Add new transaction</legend>
+            <ol>
+                <li>
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" value="@title" @Validation.For("title") />
+                    @Html.ValidationMessage("title")
+                </li>
+                <li>
+                    <label for="amount">Amount</label>
+                    <div class="flex-input">
+                        @{
+                            // Get a list of the available currency names
+                            List<SelectListItem> currencyItems = model.Currencies
+                                .Select(cur => new SelectListItem { Value = cur.Name, Text = cur.Name, Selected = ( cur.Name == currencyName ) }).ToList();
+                        }
+                        @Html.DropDownList("currency", currencyItems, new { onChange = "OnCurrencyChange()" })
+
+                        <input type="number" id="amount" name="amount" step="any" min="0" value="@amount" onchange="OnAmountChange();" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="date">When</label>
+                        @* Make the date field read only so that on mobiles the text input widget is not displayed *@
+                        <input type="text" id="date" name="date" value="@dateString" readonly="readonly" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        @{
+                            // Get a list of the available trippers
+                            List<SelectListItem> trippers = HelperMethods.TripParticipants(tripId)
+                                .Select(tripper => new SelectListItem { Value = tripper, Text = tripper, Selected = false }).ToList();
+                        }
+
+                        <label for="who">Paid By</label>
+                        @Html.DropDownList("who", trippers)
+                    </div>
+                </li>
+                <li>
+                    @{
+                        <label for="sharedBy">Shared By</label>
+
+                        <table>
+                            @foreach ( string userName in HelperMethods.TripParticipants(tripId) )
+                            {
+                                <tr>
+                                    @if ( sharers.Contains(userName) )
+                                    {
+                                        <td>
+                                            <input name="sharedBy" type="checkbox" value="@userName" checked="checked"
+                                                   onchange="OnSharerChange();" /> @userName
+                                            </td>
+                                            <td>
+                                                @if ( sharers.Count() > 0 )
+                                                {
+                                                    <span>@HelperMethods.AmountString(amount / sharers.Count(), transCurrency.Id)</span>
+                                                }
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td>
+                                                <input name="sharedBy" type="checkbox" value="@userName" onchange="OnSharerChange();" /> @userName
+                                            </td>
+                                            <td>
+                                                <span>@HelperMethods.AmountString(0.0, transCurrency.Id)</span>
+                                            </td>
+                                        }
+                                </tr>
+                            }
+                        </table>
+                    }
+                </li>
+            </ol>
+            @*Use 'fred' as the id rather than 'submit' to allow submit to be called on the form from java script*@
+            <input type="submit" name="action" value="Add transaction" id="fred" />
+        </fieldset>
+    </form>
+}

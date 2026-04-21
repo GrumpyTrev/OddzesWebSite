@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head profile="http://www.w3.org/2005/10/profile">
+    <meta charset="utf-8" />
+    <link href="~/Content/themes/base/minified/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="~/Scripts/jquery-3.2.1.min.js"></script>
+    <script src="~/Scripts/jquery-ui-1.12.1.min.js"></script>
+    <script src="~/Scripts/modernizr-2.6.2.js"></script>
+    <meta name="viewport" content="width=device-width" />
+    <style>
+        .flex-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+    </style>
+</head>
+
+   <body>
+        <header>
+            <div class="content-wrapper">
+                <section class="site-title">
+                    <a href="~/Trips">Tripping!</a>
+                </section>
+                <section id="login">
+                    @if ( WebSecurity.IsAuthenticated == true )
+                    {
+                        <div class="non-mobile">
+                            <strong>Hello <a class="email" href="~/Account/Manage" title="Manage">@WebSecurity.CurrentUserName</a></strong>
+                            <a href="~/Account/Logout?ReturnUrl=~/Trips" class="btn">Log out</a>
+                        </div>
+                        <div class="mobile dropdown">
+                            <div class="dropbtn" onclick="">@WebSecurity.CurrentUserName</div>
+                            <div class="dropdown-content">
+                                <a href="~/Account/Logout?ReturnUrl=~/Trips">Log out</a>
+                                <a href="~/Account/Manage">Manage</a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="~/Account/Login?ReturnUrl=~/Trips" class="btn">Log in</a>
+                    }
+                </section>
+                <nav style="clear:both">
+                    <ul id="menu">
+                        <li><a href="~/Trips">Trips</a></li>
+                        <li><a href="~/Trips/Currencies">Currencies</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+        <div id="body">
+            @RenderSection( "featured", required: false )
+            <section class="content-wrapper main-content clear-fix">
+                @RenderBody()
+            </section>
+        </div>
+        <footer>
+            <div class="content-wrapper">
+                <div class="float-left">
+                    <p>&copy; @DateTime.Now.Year - Money! Money! Money!</p>
+                </div>
+            </div>
+        </footer>
+        @RenderSection( "Scripts", required: false )
+    </body>
+</html>

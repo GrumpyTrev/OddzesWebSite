@@ -1,0 +1,113 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // Get the currency to edit from the url
+    int currencyId = UrlData[0].AsInt();
+    Currency currencyToEdit = model.Currencies.SingleOrDefault(cur => cur.Id == currencyId);
+
+    Page.Title = "Edit currency " + currencyToEdit.Name;
+
+    // Setup validation
+    Validation.RequireField("name", "You must specify a currency name.");
+    Validation.RequireField("symbol", "You must specify a symbol for the currency.");
+
+    // Initialise general page variables that are used to populate form fields and are updated with posted values in the case of a validation error
+    string name = currencyToEdit.Name;
+    string symbol = currencyToEdit.Symbol;
+    bool prefixSymbol = currencyToEdit.Before;
+    double rate = currencyToEdit.Rate;
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true )
+        {
+            // Update the general page variables with the posted values
+            name = Request.Form["name"];
+            rate = Double.Parse(Request.Form["rate"]);
+            symbol = Request.Form["symbol"];
+            prefixSymbol = Request.Form["prefixSymbol"].AsBool();
+
+            // Make sure that a currency with the same name does not already exist ( ignoring this currency of course )
+            if ( model.Currencies.Any(cur => ( cur.Name == name ) && ( cur.Id != currencyToEdit.Id )) )
+            {
+                ModelState.AddFormError("The currency name already exists");
+            }
+            else
+            {
+                // Replace the existing entry with the edited values
+                currencyToEdit.Name = name;
+                currencyToEdit.Symbol = symbol;
+                currencyToEdit.Rate = rate;
+                currencyToEdit.Before = prefixSymbol;
+                currencyToEdit.RateDate = DateTime.Now;
+
+                model.SaveChanges();
+
+                Response.Redirect("~/Trips/Currencies");
+            }
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p> Use the form below to change the name, symbol, symbol position or rate of a currency.</p>
+            }
+            else
+            {
+                <p> Please login to edit this currency.</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form method="post">
+        @AntiForgery.GetHtml()
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Edit currency</legend>
+            <ol>
+                <li>
+                    <div class="flex-input">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" value="@name" @Validation.For("name") />
+                        @Html.ValidationMessage("name")
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="symbol">Symbol</label>
+                        <input type="text" id="symbol" name="symbol" value="@symbol" @Validation.For("symbol") />
+                        @Html.ValidationMessage("symbol")
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label class="checkbox" for="prefixSymbol">Prefix symbol</label>
+                        <input type="checkbox" id="prefixSymbol" name="prefixSymbol" value="true" checked="@prefixSymbol" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="rate">Rate</label>
+                        <input type="number" id="rate" name="rate" step="any" min="0" value="@rate" />
+                    </div>
+                </li>
+            </ol>
+            <input type="submit" value="Update currency" id="submit" />
+        </fieldset>
+    </form>
+}

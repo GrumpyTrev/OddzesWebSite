@@ -20,7 +20,8 @@
         <EntityTypeShape EntityType="StarterSiteModel.Trip" Width="1.5" PointX="8.75" PointY="3.25" />
         <EntityTypeShape EntityType="StarterSiteModel.Tripper" Width="1.5" PointX="8.625" PointY="5.875" />
         <EntityTypeShape EntityType="StarterSiteModel.Currency" Width="1.5" PointX="10.625" PointY="0.875" />
-        <EntityTypeShape EntityType="StarterSiteModel.Transaction" Width="1.5" PointX="10.625" PointY="3.625" />
+        <EntityTypeShape EntityType="StarterSiteModel.Transaction" Width="1.5" PointX="10.875" PointY="3.5" />
+        <EntityTypeShape EntityType="StarterSiteModel.Sharer" Width="1.5" PointX="10.625" PointY="7.625" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

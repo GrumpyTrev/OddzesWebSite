@@ -1,0 +1,181 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int tripId = UrlData[0].AsInt();
+
+    Trip tripToDisplay = model.Trips.SingleOrDefault(trip => trip.Id == tripId);
+
+    // Initialise the default currency for expenses
+    string expensesCurrency = "Sterling";
+
+    Page.Title = tripToDisplay.Name;
+
+    if ( IsPost == true )
+    {
+        // Has there been a change to the selected currency
+        if ( string.IsNullOrEmpty(Request["currency"]) == false )
+        {
+            expensesCurrency = Request["currency"].Split(',')[0];
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>
+                    @string.Format("Trip created on {0} for {1}", tripToDisplay.Created.ToString("dddd d MMMM yyyy"),
+                        HelperMethods.TripParticipantsString(tripToDisplay.Id))
+                </p>
+
+                if ( model.Transactions.Any(trans => trans.TripId == tripToDisplay.Id) == false )
+                {
+                    <p>There are currently no transactions for this trip</p>
+                }
+            }
+            else
+            {
+                <p>Please login to display the transactions for this trip</p>
+            }
+        </div>
+    </section>
+}
+
+<script type="text/javascript">
+    function OnCurrencyChange(selectObj) {
+        document.getElementById('currency').value = selectObj.value;
+        document.getElementById('tripForm').submit();
+    }
+</script>
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    // Get the selected currency id
+    int currencyId = model.Currencies.Single(cur => cur.Name == expensesCurrency).Id;
+
+    List<Transaction> tripTransactions = model.Transactions.Where(trans => trans.TripId == tripToDisplay.Id).OrderBy(trans => trans.Date).ToList();
+    if ( tripTransactions.Count > 0 )
+    {
+        // Display the totals and who paid for what (all in the selected currency)
+        // If the transaction is in the selected currency then use the amount in the transaction.
+        // If the selected currency is sterling then use the sterling amounts in the transaction
+        // Otherwise two convertions are required -  from transaction amount to sterling and from sterling to selected currency
+
+        Expenses expenses = Expenses.GetExpensesForTrip(tripId, currencyId);
+
+        <form id="tripForm" method="post">
+            <input type="hidden" id="currency" name="currency" value="" />
+
+            <table>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td>@HelperMethods.AmountString(expenses.TotalExpenses, currencyId)</td>
+                    <td>
+                        @{
+                            // Get a list of the available currency names
+                            List<SelectListItem> currencyItems = model.Currencies.Select(cur => new SelectListItem
+                            { Value = cur.Name, Text = cur.Name, Selected = ( cur.Name == expensesCurrency ) }).ToList();
+                        }
+                        @Html.DropDownList("currency", currencyItems, new { onChange = "OnCurrencyChange(this);" })
+                    </td>
+                </tr>
+            </table>
+            <table>
+                @foreach ( UserExpense userExpense in expenses.UserExpenses )
+                {
+                    <tr>
+                        <td><strong>@userExpense.UserName</strong></td>
+                        <td>@HelperMethods.AmountString(userExpense.Paid, currencyId)</td>
+
+                        @if ( userExpense.Payments.Count > 0 )
+                        {
+                            // Put the first payment on the same line as the total paid and then list any additional payments on separate
+                            // lines below
+                            <td>
+                                <a href="@Href( "~/Trips/AddPayment", tripId, userExpense.UserId, userExpense.Payments[0].Amount, currencyId )" 
+                                   style="text-decoration:none; padding:0px;">
+                                    Owes @HelperMethods.AmountString(userExpense.Payments[0].Amount, currencyId) to @HelperMethods.UserNameString(userExpense.Payments[0].ToUserId)
+                                </a>
+                            </td>
+                        }
+                    </tr>
+
+                    // If there are additional payments then list these on separate lines below the first payment
+                    if ( userExpense.Payments.Count > 1 )
+                    {
+                        foreach ( BalancePayment payment in userExpense.Payments.Skip(1) )
+                        {
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td>
+                                    <a href="@Href( "~/Trips/AddPayment", tripId, userExpense.UserId, payment.Amount, currencyId )"
+                                       style="text-decoration:none; padding:0px;">
+                                        Owes @HelperMethods.AmountString(payment.Amount, currencyId) to @HelperMethods.UserNameString(payment.ToUserId)
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </table>
+            <table>
+                @{
+                    // Keep track of which day is being displayed
+                    string dateString = "";
+
+                    foreach ( Transaction trans in tripTransactions )
+                    {
+                        string thisDateString = trans.Date.ToString("d MMM yyyy");
+
+                        // Already displaying transactions for this day for this month?
+                        if ( dateString != thisDateString )
+                        {
+                            dateString = thisDateString;
+                            <tr><td class="tdNoPad"><strong>@dateString</strong></td></tr>
+                        }
+
+                        <tr>
+                            <td class="tdNoPad" style="padding-left:10px;">
+                                <a href="@Href( "~/Trips/Transaction", trans.Id )" style="text-decoration:none; padding:0px;">
+                                    <strong>@trans.Title</strong>
+                                    <br />
+                                    @if ( trans.IsBalance == false )
+                                    {
+                                        <span>@string.Format("Paid by {0}", HelperMethods.UserNameString(trans.WhoId))</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@string.Format("From {0} to {1}", HelperMethods.UserNameString(trans.WhoId),
+                                            HelperMethods.UserNameString(trans.PaidToId))</span>
+                                    }
+                                </a>
+                            </td>
+
+                            @if ( trans.CurrencyId == HelperMethods.SterlingId() )
+                            {
+                                <td class="tdNoPad"><strong>@HelperMethods.AmountString(trans.LocalValue, trans.CurrencyId)</strong></td>
+                            }
+                            else
+                            {
+                                <td class="tdNoPad">
+                                    <strong>@HelperMethods.AmountString(trans.LocalValue, trans.CurrencyId)</strong><br />
+                                    (@HelperMethods.AmountString(trans.SterlingValue, HelperMethods.SterlingId()))
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </table>
+        </form>
+    }
+    <p></p>
+    <a href="@Href( "~/Trips/AddTransaction", tripId )" class="btn">Add transaction</a>
+}

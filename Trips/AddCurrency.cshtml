@@ -1,0 +1,113 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+    Page.Title = "Add Currency";
+
+    // Initialise general page variables
+    string name = "";
+    string symbol = "";
+    bool prefixSymbol = true;
+    double rate = 0;
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // Setup validation
+    Validation.RequireField("name", "You must specify a currency name.");
+    Validation.RequireField("symbol", "You must specify a symbol for the currency.");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        AntiForgery.Validate();
+        if ( Validation.IsValid() == true )
+        {
+            name = Request.Form["name"];
+            rate = Double.Parse(Request.Form["rate"]);
+            symbol = Request.Form["symbol"];
+            prefixSymbol = Request.Form["prefixSymbol"].AsBool();
+
+            // Make sure that a currency with the same name does not already exist
+            if ( model.Currencies.Where(c => c.Name == name).Any() == true )
+            {
+                ModelState.AddFormError("A currency with that name already exists");
+            }
+            else
+            {
+                // Add a new currency and return to the currencies page
+                model.Currencies.Add(new Currency
+                {
+                    Name = name,
+                    Symbol = symbol,
+                    Rate = rate,
+                    Before = prefixSymbol,
+                    RateDate = DateTime.Now
+                });
+                model.SaveChanges();
+                Response.Redirect("~/Trips/Currencies");
+            }
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>
+                    Use the form below to add a new currency to the database. The new currency will be appended to
+                    the end of the list. <br>
+                    To change the details for an existing currency select the currency from the Currencies page.
+                </p>
+            }
+            else
+            {
+                <p>Please login to display the available trips</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form method="post">
+        @AntiForgery.GetHtml()
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Add new currency</legend>
+            <ol>
+                <li>
+                    <div class="flex-input">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" value="@name" @Validation.For("name") />
+                        @Html.ValidationMessage("name")
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="symbol">Symbol</label>
+                        <input type="text" id="symbol" name="symbol" value="@symbol" @Validation.For("symbol") />
+                        @Html.ValidationMessage("symbol")
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label class="checkbox" for="prefixSymbol">Prefix symbol</label>
+                        <input type="checkbox" id="prefixSymbol" name="prefixSymbol" value="true" checked="@prefixSymbol" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="rate">Rate</label>
+                        <input type="number" id="rate" name="rate" step="any" min="0" value="@rate" />
+                    </div>
+                </li>
+            </ol>
+            <input type="submit" value="Add currency" id="submit" />
+        </fieldset>
+    </form>
+}

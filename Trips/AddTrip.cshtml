@@ -1,0 +1,122 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+    Page.Title = "Add Trip";
+
+    // Initialise general page variables
+    string name = "";
+    string[] participants = { };
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // Setup validation
+    Validation.RequireField("name", "You must specify a trip name.");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        AntiForgery.Validate();
+
+        // Update the general page variables with the posted values.
+        // Do this before validation so that if there is a validation error the form fields will be populated with the
+        // posted values instead of the defaults
+        name = Request.Form["name"];
+
+        if ( Request.Form["IsInTrip"] != null )
+        {
+            participants = Request.Form["IsInTrip"].Split(',');
+        }
+
+        if ( Validation.IsValid() == true )
+        {
+            // Make sure that a trip with the same name does not already exist
+            if ( model.Trips.Where(t => t.Name == name).Any() == true )
+            {
+                ModelState.AddFormError("A trip with that name already exists");
+            }
+            else
+            {
+                // Make sure that there is at least one participant in the trip
+                if ( participants.Count() == 0 )
+                {
+                    ModelState.AddFormError("You must select at least one participant for the trip");
+                }
+                else
+                {
+                    // Add a new trip and return to the trips page
+                    Trip newTrip = model.Trips.Add(new Trip { Name = name, Open = true, Created = DateTime.Now });
+
+                    // Save changes at this point so that the new trip has an id that can be used in the trippers records
+                    model.SaveChanges();
+
+                    // Get the names of the trippers and from them a list of user ids
+                    IEnumerable<int> userIds = model.UserProfiles.Where(user => participants.Contains(user.Email)).Select(user => user.UserId);
+
+                    foreach ( int userId in userIds )
+                    {
+                        model.Trippers.Add(new Tripper() { TripId = newTrip.Id, UserId = userId });
+                    }
+
+                    model.SaveChanges();
+
+                    Response.Redirect("~/Trips/Trips");
+                }
+            }
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>Use the form below to add a new trip.</p>
+            }
+            else
+            {
+                <p>Please login to add a new trip</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form method="post">
+        @AntiForgery.GetHtml()
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Add new trip</legend>
+            <div class="flex-input">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" value="@name" @Validation.For("name") />
+            </div>
+            @Html.ValidationMessage("name")
+            @{
+                // Get a local copy of the UserProfiles so that Entity LINQ isn't required when getting trippers only
+                List<UserProfile> users = model.UserProfiles.ToList();
+                IEnumerable<UserProfile> trippers = users.Where(user => Roles.IsUserInRole(user.Email, "Tripper"));
+
+                <label for="isInTrip">Participants</label>
+
+                foreach ( UserProfile user in trippers )
+                {
+                    if ( participants.Contains(user.Email) )
+                    {
+                        <input name="isInTrip" type="checkbox" value="@user.Email" checked="checked" /> @user.Email<br />
+                    }
+                    else
+                    {
+                        <input name="isInTrip" type="checkbox" value="@user.Email" /> @user.Email<br />
+                    }
+                }
+            }
+            <input type="submit" value="Add trip" id="submit" />
+        </fieldset>
+    </form>
+}
