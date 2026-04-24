@@ -21,7 +21,6 @@
     // If this is a POST request, validate and process data
     if ( IsPost == true )
     {
-        AntiForgery.Validate();
         if ( Validation.IsValid() == true )
         {
             // Update the general page variables with the posted values
@@ -73,7 +72,6 @@
 @if ( WebSecurity.IsAuthenticated == true )
 {
     <form method="post">
-        @AntiForgery.GetHtml()
         @* If one or more validation errors exist, show an error *@
         @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
 
@@ -108,6 +106,7 @@
                 </li>
             </ol>
             <input type="submit" value="Update currency" id="submit" />
+            <a href="@Href("~/Trips/Currencies")" class="btn">Cancel</a>
         </fieldset>
     </form>
 }

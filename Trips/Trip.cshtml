@@ -17,7 +17,7 @@
         // Has there been a change to the selected currency
         if ( string.IsNullOrEmpty(Request["currency"]) == false )
         {
-            expensesCurrency = Request["currency"].Split(',')[0];
+            expensesCurrency = Request["currency"];
         }
     }
 }
@@ -30,10 +30,8 @@
             </hgroup>
             @if ( WebSecurity.IsAuthenticated == true )
             {
-                <p>
-                    @string.Format("Trip created on {0} for {1}", tripToDisplay.Created.ToString("dddd d MMMM yyyy"),
-                        HelperMethods.TripParticipantsString(tripToDisplay.Id))
-                </p>
+                <p>@string.Format("Trip created on {0} for {1}", tripToDisplay.Created.ToString("dddd d MMMM yyyy"),
+                        HelperMethods.TripParticipantsString(tripToDisplay.Id))</p>
 
                 if ( model.Transactions.Any(trans => trans.TripId == tripToDisplay.Id) == false )
                 {
@@ -49,8 +47,8 @@
 }
 
 <script type="text/javascript">
-    function OnCurrencyChange(selectObj) {
-        document.getElementById('currency').value = selectObj.value;
+    function OnCurrencyChange() {
+        document.getElementById('currency').value = document.getElementById('currencyItems').value;
         document.getElementById('tripForm').submit();
     }
 </script>
@@ -60,7 +58,8 @@
     // Get the selected currency id
     int currencyId = model.Currencies.Single(cur => cur.Name == expensesCurrency).Id;
 
-    List<Transaction> tripTransactions = model.Transactions.Where(trans => trans.TripId == tripToDisplay.Id).OrderBy(trans => trans.Date).ToList();
+    List<Transaction> tripTransactions = model.Transactions.Where(trans => trans.TripId == tripToDisplay.Id)
+        .OrderByDescending(trans => trans.Date).ThenByDescending(trans => trans.Id).ToList();
     if ( tripTransactions.Count > 0 )
     {
         // Display the totals and who paid for what (all in the selected currency)
@@ -83,7 +82,7 @@
                             List<SelectListItem> currencyItems = model.Currencies.Select(cur => new SelectListItem
                             { Value = cur.Name, Text = cur.Name, Selected = ( cur.Name == expensesCurrency ) }).ToList();
                         }
-                        @Html.DropDownList("currency", currencyItems, new { onChange = "OnCurrencyChange(this);" })
+                        @Html.DropDownList("currencyItems", currencyItems, new { onChange = "OnCurrencyChange();" })
                     </td>
                 </tr>
             </table>
@@ -100,7 +99,7 @@
                             // lines below
                             <td>
                                 <a href="@Href( "~/Trips/AddPayment", tripId, userExpense.UserId, userExpense.Payments[0].Amount, currencyId )" 
-                                   style="text-decoration:none; padding:0px;">
+                                   style="padding:0px;">
                                     Owes @HelperMethods.AmountString(userExpense.Payments[0].Amount, currencyId) to @HelperMethods.UserNameString(userExpense.Payments[0].ToUserId)
                                 </a>
                             </td>
@@ -117,7 +116,7 @@
                                 <td></td>
                                 <td>
                                     <a href="@Href( "~/Trips/AddPayment", tripId, userExpense.UserId, payment.Amount, currencyId )"
-                                       style="text-decoration:none; padding:0px;">
+                                       style="padding:0px;">
                                         Owes @HelperMethods.AmountString(payment.Amount, currencyId) to @HelperMethods.UserNameString(payment.ToUserId)
                                     </a>
                                 </td>
@@ -144,7 +143,7 @@
 
                         <tr>
                             <td class="tdNoPad" style="padding-left:10px;">
-                                <a href="@Href( "~/Trips/Transaction", trans.Id )" style="text-decoration:none; padding:0px;">
+                                <a href="@Href( "~/Trips/Transaction", trans.Id )" style="padding:0px;">
                                     <strong>@trans.Title</strong>
                                     <br />
                                     @if ( trans.IsBalance == false )

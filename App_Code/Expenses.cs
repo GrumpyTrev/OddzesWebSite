@@ -32,7 +32,7 @@ public class Expenses
         // Get all the transactions associated with the specified trip
         IEnumerable<Transaction> tripTransactions = model.Transactions.Where(tran => tran.TripId == tripId);
 
-        // AIEnumerabledd up all the expenses associated with the current trip and convert to the specified currency
+        // Add up all the expenses associated with the current trip and convert to the specified currency
         IEnumerable<Transaction> expenses = tripTransactions.Where(tran => tran.IsBalance == false);
         TotalExpenses = expenses.Sum(trans => HelperMethods.ConvertAmount(trans.LocalValue, trans.CurrencyId, currencyId));
 

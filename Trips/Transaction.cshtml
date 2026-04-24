@@ -12,7 +12,8 @@
     // If this is a POST request, validate and process data
     if ( IsPost == true )
     {
-        // Delete this transaction
+        // Delete this transaction and any associated sharers
+        model.Sharers.RemoveRange(model.Sharers.Where(sharer => sharer.TransactionId == transactionToDisplay.Id));
         model.Transactions.Remove(transactionToDisplay);
         model.SaveChanges();
 
@@ -50,10 +51,10 @@
                 <td style="padding-left:10px;"><strong>@HelperMethods.UserNameString(transactionToDisplay.WhoId)</strong></td>
                 <td style="padding-left:10px;"><strong>@HelperMethods.AmountString(transactionToDisplay.LocalValue, transactionToDisplay.CurrencyId)</strong></td>
             </tr>
-            <tr><td><strong>Participants</strong></td> </tr>
+            <tr><td><strong>Shared By</strong></td> </tr>
 
             @{
-                List<string> participants = HelperMethods.TripParticipants(transactionToDisplay.TripId);
+                List<string> participants = HelperMethods.OrderedTripParticipants(transactionToDisplay.TripId);
                 foreach ( string userName in participants )
                 {
                     <tr>
@@ -63,13 +64,13 @@
                 }
             }
         </table>
-        }
-        else
-        {
+    }
+    else
+    {
         <p>
-            <strong>@HelperMethods.AmountString(transactionToDisplay.LocalValue, transactionToDisplay.CurrencyId)</strong> 
-            from <strong>@HelperMethods.UserNameString(transactionToDisplay.WhoId)</strong> 
-            to <strong>@HelperMethods.UserNameString(transactionToDisplay.PaidToId)</strong> 
+            <strong>@HelperMethods.AmountString(transactionToDisplay.LocalValue, transactionToDisplay.CurrencyId)</strong>
+            from <strong>@HelperMethods.UserNameString(transactionToDisplay.WhoId)</strong>
+            to <strong>@HelperMethods.UserNameString(transactionToDisplay.PaidToId)</strong>
         </p>
     }
 

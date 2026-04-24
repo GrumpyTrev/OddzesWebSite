@@ -14,8 +14,6 @@
     // If this is a POST request, validate and process data
     if ( IsPost == true )
     {
-        AntiForgery.Validate();
-
         // Update the general page variables with the posted values.
         // Do this before validation so that if there is a validation error the form fields will be populated with the
         // posted values instead of the defaults
@@ -58,7 +56,7 @@
 
                     model.SaveChanges();
 
-                    Response.Redirect("~/Trips/Trips");
+                    Response.Redirect("~/Trips");
                 }
             }
         }
@@ -86,7 +84,6 @@
 @if ( WebSecurity.IsAuthenticated == true )
 {
     <form method="post">
-        @AntiForgery.GetHtml()
         @* If one or more validation errors exist, show an error *@
         @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
 
@@ -98,9 +95,8 @@
             </div>
             @Html.ValidationMessage("name")
             @{
-                // Get a local copy of the UserProfiles so that Entity LINQ isn't required when getting trippers only
-                List<UserProfile> users = model.UserProfiles.ToList();
-                IEnumerable<UserProfile> trippers = users.Where(user => Roles.IsUserInRole(user.Email, "Tripper"));
+                // Get a list of the tripper with the current user at the top of the list.
+                List<UserProfile> trippers = HelperMethods.OrderedTrippers();
 
                 <label for="isInTrip">Participants</label>
 
@@ -117,6 +113,7 @@
                 }
             }
             <input type="submit" value="Add trip" id="submit" />
+            <a href="@Href("~/Trips")" class="btn">Cancel</a>
         </fieldset>
     </form>
 }

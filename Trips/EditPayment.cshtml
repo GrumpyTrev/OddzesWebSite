@@ -7,15 +7,15 @@
     int paymentId = UrlData[0].AsInt();
     Transaction paymentToEdit = model.Transactions.Single(trans => trans.Id == paymentId);
 
-    Page.Title = "Edit payment " + paymentToEdit.Title;
+    Page.Title = "Edit payment";
 
     // Initialise the variables that are used to pre-populate the form fields.
     // These will be updated if the user changes the currency or submits the form with errors.
     string dateString = paymentToEdit.Date.ToString("dd/MM/yyyy");
     int currencyId = paymentToEdit.CurrencyId;
     string currencyName = model.Currencies.Single(curr => curr.Id == currencyId).Name;
-    string from = HelperMethods.UserNameString( paymentToEdit.WhoId );
-    string to = HelperMethods.UserNameString( paymentToEdit.PaidToId );
+    string from = HelperMethods.UserNameString(paymentToEdit.WhoId);
+    string to = HelperMethods.UserNameString(paymentToEdit.PaidToId);
     double amount = paymentToEdit.LocalValue;
 
     // If this is a POST request, validate and process data
@@ -29,14 +29,13 @@
         currencyName = Request.Form["currencyItems"];
         currencyId = model.Currencies.Single(cur => cur.Name == currencyName).Id;
 
-        amount = Double.Parse(Request.Form["amount"]);
+        Double.TryParse(Request.Form["amount"], out amount);
         from = Request.Form["from"];
         to = Request.Form["to"];
 
         // Check for 'action' values first
         if ( Request["action"] == "Update payment" )
         {
-            AntiForgery.Validate();
             if ( Validation.IsValid() == true )
             {
                 // Update the fields in the payment
@@ -57,7 +56,7 @@
             // Has there been a change to the selected currency
             if ( string.IsNullOrEmpty(Request["currency"]) == false )
             {
-                currencyName = Request["currency"].Split(',')[0];
+                currencyName = Request["currency"];
                 currencyId = model.Currencies.Single(cur => cur.Name == currencyName).Id;
                 amount = HelperMethods.ConvertAmount(paymentToEdit.LocalValue, paymentToEdit.CurrencyId, currencyId);
             }
@@ -71,9 +70,14 @@
             <hgroup class="title">
                 <h1>@Page.Title.</h1>
             </hgroup>
-            <p>
-                Use the form below to edit the payment
-            </p>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>Use the form below to edit the payment</p>
+            }
+            else
+            {
+                <p>Please login to edit this payment</p>
+            }
         </div>
     </section>
 }
@@ -82,19 +86,19 @@
     $(document).ready(function () {
         $.datepicker.setDefaults($.extend({ 'dateFormat': 'dd/mm/yy' }, $.datepicker.regional['uk']));
         $("#date").datepicker();
-        });
+    });
 </script>
 
 <script type="text/javascript">
-    function OnCurrencyChange(selectObj) {
-            document.getElementById('currency').value = document.getElementById('currencyItems').value;
-            document.getElementById('paymentForm').submit();
-        }
+    function OnCurrencyChange() {
+        document.getElementById('currency').value = document.getElementById('currencyItems').value;
+        document.getElementById('paymentForm').submit();
+    }
 </script>
 
-<section>
+@if ( WebSecurity.IsAuthenticated == true )
+{
     <form id="paymentForm" method="post">
-        @AntiForgery.GetHtml()
         @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
 
         <input type="hidden" id="currency" name="currency" value="" />
@@ -103,10 +107,6 @@
             <legend>Update payment</legend>
             <ol>
                 <li>
-                    <label for="title">Title</label>
-                    <input type="text" id="title" name="title" readonly="readonly" value="Payment" />
-                </li>
-                <li>
                     <label for="amount">Amount</label>
                     <div class="flex-input">
                         @{
@@ -114,7 +114,7 @@
                             List<SelectListItem> currencyItems = model.Currencies.Select(cur => new SelectListItem
                             { Value = cur.Name, Text = cur.Name, Selected = cur.Id == currencyId }).ToList();
                         }
-                        @Html.DropDownList("currencyItems", currencyItems, new { onChange = "OnCurrencyChange(this)" })
+                        @Html.DropDownList("currencyItems", currencyItems, new { onChange = "OnCurrencyChange()" })
 
                         <input type="number" id="amount" name="amount" step="any" min="0" value="@amount.ToString("F2")" />
                     </div>
@@ -151,7 +151,7 @@
                 </li>
             </ol>
             <input type="submit" name="action" value="Update payment" id="fred" />
+            <a href="@Href("~/Trips/Trip", paymentToEdit.TripId)" class="btn">Cancel</a>
         </fieldset>
     </form>
-
-</section>
+}

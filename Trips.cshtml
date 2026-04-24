@@ -6,7 +6,6 @@
     // If this is a POST request, validate and process data
     if ( IsPost == true )
     {
-        AntiForgery.Validate();
         if ( Validation.IsValid() == true )
         {
             // Look for a trip to delete
@@ -14,9 +13,17 @@
             {
                 int tripId = Request["deleteTripId"].AsInt();
 
-                // Remove any transactions and tripper records associated with this trip
+                // Delete each transaction and its associated sharers for this trip
+                foreach ( Transaction transaction in model.Transactions.Where(trans => trans.TripId == tripId) )
+                {
+                    model.Sharers.RemoveRange(model.Sharers.Where(sharer => sharer.TransactionId == transaction.Id));
+                    model.Transactions.Remove(transaction);
+                }
+
+                // Remove any tripper records associated with this trip
                 model.Trippers.RemoveRange(model.Trippers.Where(tripper => tripper.TripId == tripId));
 
+                // Now remove the trip record itself
                 model.Trips.Remove(model.Trips.Single(trip => trip.Id == tripId));
 
                 model.SaveChanges();
@@ -89,17 +96,10 @@
     if ( model.Trips.Any() == true )
     {
         <form id="tripsForm" method="post">
-            @AntiForgery.GetHtml()
 
             <input type="hidden" id="deleteTripId" name="deleteTripId" value="" />
 
             <table>
-                <tr>
-                    <th>Name</th>
-                    <th>Created</th>
-                    <th>Trippers</th>
-                </tr>
-
                 @{
                     // Display the open trips first and then the closed trips
                     bool[] openStates = new bool[] { true, false };
@@ -110,9 +110,7 @@
                         foreach ( Trip trip in model.Trips.Where( trip => trip.Open == openState ) )
                         {
                             <tr>
-                                <td class="tdNoPad"><a href="@Href("~/Trips/Trip", trip.Id)">@trip.Name</a></td>
-                                <td class="tdNoPad">@TripDateString(trip.Created)</td>
-                                <td class="tdNoPad">@HelperMethods.TripParticipantsString(trip.Id)</td>
+                                <td class="tdNoPad" style="font-size: 1.75em;"><a href="@Href("~/Trips/Trip", trip.Id)">@trip.Name</a></td>
                                 <td class="tdNoPad">
                                     <a href="@Href("~/Trips/EditTrip", trip.Name)" class="btn" style="height:24px; padding:0px">
                                         <i class='material-icons'>edit</i>

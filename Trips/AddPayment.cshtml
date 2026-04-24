@@ -34,13 +34,12 @@
         currencyName = Request.Form["currencyItems"];
         currencyId = model.Currencies.Single(cur => cur.Name == currencyName).Id;
 
-        amount = Double.Parse(Request.Form["amount"]);
+        Double.TryParse(Request.Form["amount"], out amount);
         to = Request.Form["to"];
 
         // Check for 'action' values first
         if ( Request["action"] == "Add payment" )
         {
-            AntiForgery.Validate();
             if ( Validation.IsValid() == true )
             {
                 // Add a new transaction to the trip
@@ -67,7 +66,7 @@
             // Has there been a change to the selected currency
             if ( string.IsNullOrEmpty(Request["currency"]) == false )
             {
-                currencyName = Request["currency"].Split(',')[0];
+                currencyName = Request["currency"];
                 currencyId = model.Currencies.Single(cur => cur.Name == currencyName).Id;
                 amount = HelperMethods.ConvertAmount(requestAmount, requestCurrencyId, currencyId);
             }
@@ -83,10 +82,7 @@
             </hgroup>
             @if ( WebSecurity.IsAuthenticated == true )
             {
-                <p>
-                    Use the form below to add a payment record to the trip.<br>
-                    The payment record can be in any currency, and any amount.
-                </p>
+                <p>Use the form below to add a payment record to the trip</p>
             }
             else
             {
@@ -104,7 +100,7 @@
 </script>
 
 <script type="text/javascript">
-    function OnCurrencyChange(selectObj) {
+    function OnCurrencyChange() {
         document.getElementById('currency').value = document.getElementById('currencyItems').value;
         document.getElementById('paymentForm').submit();
     }
@@ -113,7 +109,6 @@
 @if ( WebSecurity.IsAuthenticated == true )
 { 
     <form id="paymentForm" method="post">
-        @AntiForgery.GetHtml()
         @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
 
         <input type="hidden" id="currency" name="currency" value="" />
@@ -122,10 +117,6 @@
             <legend>Add new payment</legend>
             <ol>
                 <li>
-                    <label for="title">Title</label>
-                    <input type="text" id="title" name="title" readonly="readonly" value="Payment" />
-                </li>
-                <li>
                     <label for="amount">Amount</label>
                     <div class="flex-input">
                         @{
@@ -133,7 +124,7 @@
                             List<SelectListItem> currencyItems = model.Currencies.Select(cur => new SelectListItem
                             { Value = cur.Name, Text = cur.Name, Selected = cur.Id == currencyId }).ToList();
                         }
-                        @Html.DropDownList("currencyItems", currencyItems, new { onChange = "OnCurrencyChange(this)" });
+                        @Html.DropDownList("currencyItems", currencyItems, new { onChange = "OnCurrencyChange()" })
 
                         <input type="number" id="amount" name="amount" step="any" min="0" value="@amount.ToString("F2")" />
                     </div>
@@ -171,6 +162,7 @@
                 </li>
             </ol>
             <input type="submit" name="action" value="Add payment" id="fred" />
+            <a href="@Href("~/Trips/Trip", tripId)" class="btn">Cancel</a>
         </fieldset>
     </form>
 }

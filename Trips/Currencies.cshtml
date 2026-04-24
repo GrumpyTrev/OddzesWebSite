@@ -6,7 +6,6 @@
     // If this is a POST request, validate and process data
     if ( IsPost == true )
     {
-        AntiForgery.Validate();
         if ( Validation.IsValid() == true )
         {
             // Look for a currency to delete
@@ -64,7 +63,6 @@
     if ( model.Currencies.Count() > 0 )
     {
         <form id="currenciesForm" method="post">
-            @AntiForgery.GetHtml()
 
             <input type="hidden" id="deleteCurrencyId" name="deleteCurrencyId" value="" />
 
