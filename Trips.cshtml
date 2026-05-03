@@ -116,14 +116,20 @@
                                         <i class='material-icons'>edit</i>
                                     </a>
                                 </td>
-                                <td class="tdNoPad">
-                                    <button class="btn" style="height:24px; padding:0px"
-                                            onclick="@string.Format("deleteTrip( {0}, '{1}', '{2}');", trip.Id,
-                                                                     model.Transactions.Any(trans => trans.TripId == trip.Id), trip.Name)"
-                                            type="button">
-                                        <i class='material-icons'>delete</i>
-                                    </button>
-                                </td>
+                                @{
+                                    // Only display the delete button for open trips
+                                    if ( trip.Open == true )
+                                    {
+                                        <td class="tdNoPad">
+                                            <button class="btn" style="height:24px; padding:0px"
+                                                    onclick="@string.Format("deleteTrip( {0}, '{1}', '{2}');", trip.Id,
+                                                                             model.Transactions.Any(trans => trans.TripId == trip.Id), trip.Name)"
+                                                    type="button">
+                                                <i class='material-icons'>delete</i>
+                                            </button>
+                                        </td>
+                                    }
+                                }
                             </tr>
                             }
                         }

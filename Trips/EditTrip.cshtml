@@ -18,47 +18,62 @@
     // If this is a POST request, validate and process data
     if ( IsPost == true )
     {
-        // Update the general page variables with the posted values.
-        // Do this before validation so that if there is a validation error the form fields will be populated with the
-        // posted values instead of the defaults
-        name = Request.Form["name"];
-        isOpen = Request.Form["open"].AsBool();
-        participants = ( Request.Form["isInTrip"] != null ) ? Request.Form["isInTrip"].Split(',') : new string[0];
-
-        if ( Validation.IsValid() == true )
+        // If the trip is closed, only update the open/closed status.
+        // The name and participants can only be edited when the trip is open.
+        if ( tripToEdit.Open == false )
         {
-            // Make sure that a trip with the same name does not already exist ( ignoring this trip of course )
-            if ( model.Trips.Any(trip => ( trip.Name == name ) && ( trip.Id != tripToEdit.Id )) )
+            isOpen = Request.Form["open"].AsBool();
+            if ( isOpen == true )
             {
-                ModelState.AddFormError("The trip name already exists");
+                tripToEdit.Open = true;
+                model.SaveChanges();
             }
-            else
+            Response.Redirect("~/Trips");
+        }
+        else
+        {
+            // Update the general page variables with the posted values.
+            // Do this before validation so that if there is a validation error the form fields will be populated with the
+            // posted values instead of the defaults
+            name = Request.Form["name"];
+            isOpen = Request.Form["open"].AsBool();
+            participants = ( Request.Form["isInTrip"] != null ) ? Request.Form["isInTrip"].Split(',') : new string[0];
+
+            if ( Validation.IsValid() == true )
             {
-                // Make sure that there is at least one participant in the trip
-                if ( participants.Count() == 0 )
+                // Make sure that a trip with the same name does not already exist ( ignoring this trip of course )
+                if ( model.Trips.Any(trip => ( trip.Name == name ) && ( trip.Id != tripToEdit.Id )) )
                 {
-                    ModelState.AddFormError("You must select at least one participant for the trip");
+                    ModelState.AddFormError("The trip name already exists");
                 }
                 else
                 {
-                    // Replace the existing entry with the edited values
-                    tripToEdit.Name = name;
-                    tripToEdit.Open = isOpen;
-
-                    // The best way of updating the trippers records is to delete all the old ones first and then add the new
-                    model.Trippers.RemoveRange(model.Trippers.Where(tripper => tripper.TripId == tripToEdit.Id));
-
-                    // Get the names of the trippers and from them a list of user ids
-                    IEnumerable<int> userIds = model.UserProfiles.Where(user => participants.Contains(user.Email)).Select(user => user.UserId);
-
-                    foreach ( int userId in userIds )
+                    // Make sure that there is at least one participant in the trip
+                    if ( participants.Count() == 0 )
                     {
-                        model.Trippers.Add(new Tripper() { TripId = tripToEdit.Id, UserId = userId });
+                        ModelState.AddFormError("You must select at least one participant for the trip");
                     }
+                    else
+                    {
+                        // Replace the existing entry with the edited values
+                        tripToEdit.Name = name;
+                        tripToEdit.Open = isOpen;
 
-                    model.SaveChanges();
+                        // The best way of updating the trippers records is to delete all the old ones first and then add the new
+                        model.Trippers.RemoveRange(model.Trippers.Where(tripper => tripper.TripId == tripToEdit.Id));
 
-                    Response.Redirect("~/Trips");
+                        // Get the names of the trippers and from them a list of user ids
+                        IEnumerable<int> userIds = model.UserProfiles.Where(user => participants.Contains(user.Email)).Select(user => user.UserId);
+
+                        foreach ( int userId in userIds )
+                        {
+                            model.Trippers.Add(new Tripper() { TripId = tripToEdit.Id, UserId = userId });
+                        }
+
+                        model.SaveChanges();
+
+                        Response.Redirect("~/Trips");
+                    }
                 }
             }
         }
@@ -73,7 +88,7 @@
             </hgroup>
             @if ( WebSecurity.IsAuthenticated == true )
             {
-                <p> Use the form below to change the name, participants or open/close status of a trip.</p>
+                <p>Use the form below to change the name, participants or open/close status of a trip.</p>
             }
             else
             {
@@ -92,34 +107,41 @@
         <fieldset>
             <legend>Edit trip</legend>
             <ol>
-                <li>
-                    <div class="flex-input">
-                        <label for="name">Name</label>
-                        <input type="text" id="name" name="name" value="@tripName" @Validation.For("name") />
-                        @* Write any user name validation errors to the page *@
-                        @Html.ValidationMessage("name")
-                    </div>
-                </li>
-                <li>
-                    @{
-                        // Get a list of the tripper with the current user at the top of the list.
-                        List<UserProfile> trippers = HelperMethods.OrderedTrippers();
+                @if ( tripToEdit.Open == true )
+                {
+                    <li>
+                        <div class="flex-input">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" value="@tripName" @Validation.For("name") />
+                            @* Write any user name validation errors to the page *@
+                            @Html.ValidationMessage("name")
+                        </div>
+                    </li>
+                    <li>
+                        @{
+                            // Get a list of the tripper with the current user at the top of the list.
+                            List<UserProfile> trippers = HelperMethods.OrderedTrippers();
 
-                        <label for="isInTrip">Participants</label>
+                            <label for="isInTrip">Participants</label>
 
-                        foreach ( UserProfile user in trippers )
-                        {
-                            if ( participants.Contains(user.Email) )
+                            foreach ( UserProfile user in trippers )
                             {
-                                <input name="isInTrip" type="checkbox" value="@user.Email" checked="checked" /> @user.Email<br />
-                            }
-                            else
-                            {
-                                <input name="isInTrip" type="checkbox" value="@user.Email" /> @user.Email<br />
+                                if ( participants.Contains(user.Email) )
+                                {
+                                    <input name="isInTrip" type="checkbox" value="@user.Email" checked="checked" /> @user.Email<br />
+                                }
+                                else
+                                {
+                                    <input name="isInTrip" type="checkbox" value="@user.Email" /> @user.Email<br />
+                                }
                             }
                         }
-                    }
-                </li>
+                    </li>
+                }
+                else
+                {
+                    <li class="error">This trip is currently closed. If you want to re-open it, check the open box below and click update.</li>
+                }
                 <li>
                     <div class="flex-input">
                         <label class="checkbox" for="open">Open</label>

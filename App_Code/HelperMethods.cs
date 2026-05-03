@@ -12,12 +12,20 @@ public class HelperMethods
     /// <returns></returns>
     static public string TripParticipantsString(int tripId)
     {
-        string text = "No trippers yet!!";
+        string text = "";
 
         List<string> userNames = TripParticipants(tripId);
+
         if ( userNames.Count > 0 )
         {
-            text = string.Join(", ", userNames);
+            if ( userNames.Count == 1 )
+            {
+                text = userNames[0];
+            }
+            else
+            {
+                text = string.Join(", ", userNames.Take(userNames.Count - 1)) + " & " + userNames.Last();
+            }
         }
 
         return text;
