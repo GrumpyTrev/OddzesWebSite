@@ -8,8 +8,9 @@
     // These details are used to pre-populate the form, and to determine which trip the payment is being added to, and who is making the payment.
     int tripId = UrlData[0].AsInt();
     int userId = UrlData[1].AsInt();
-    double requestAmount = Double.Parse(UrlData[2]);
-    int requestCurrencyId = UrlData[3].AsInt();
+    int toUserId = UrlData[2].AsInt();
+    double requestAmount = Double.Parse(UrlData[3]);
+    int requestCurrencyId = UrlData[4].AsInt();
 
     string tripName = model.Trips.Single(trip => trip.Id == tripId).Name;
 
@@ -20,7 +21,7 @@
     string dateString = DateTime.Now.ToString("dd/MM/yyyy");
     int currencyId = requestCurrencyId;
     string currencyName = model.Currencies.Single(curr => curr.Id == currencyId).Name;
-    string to = "";
+    string to = model.UserProfiles.Single( user => user.UserId == toUserId ).Email;
     double amount = requestAmount;
 
     // If this is a POST request, validate and process data
@@ -153,7 +154,8 @@
                         @{
                             // Get a list of the available trippers that can be payed. Don't include the currently selected payer
                             List<SelectListItem> payees = users.Where(user => user.UserId != userId)
-                                .Select(user => new SelectListItem { Value = user.Email, Text = user.Email, Selected = false }).ToList();
+                                .Select(user => new SelectListItem { Value = user.Email, Text = user.Email, 
+                                    Selected = user.Email == to }).ToList();
 
                             <label for="to">To</label>
                             @Html.DropDownList("to", payees)
