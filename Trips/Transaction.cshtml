@@ -12,13 +12,28 @@
     // If this is a POST request, validate and process data
     if ( IsPost == true )
     {
-        // Delete this transaction and any associated sharers
-        model.Sharers.RemoveRange(model.Sharers.Where(sharer => sharer.TransactionId == transactionToDisplay.Id));
-        model.Transactions.Remove(transactionToDisplay);
-        model.SaveChanges();
+        // Check for 'action' values first
+        if ( Request["action"] == "Delete" )
+        {
+            // Delete this transaction and any associated sharers
+            model.Sharers.RemoveRange(model.Sharers.Where(sharer => sharer.TransactionId == transactionToDisplay.Id));
+            model.Transactions.Remove(transactionToDisplay);
+            model.SaveChanges();
 
-        // Return back to the trip
-        Response.Redirect(Href("~/Trips/Trip", transactionToDisplay.TripId));
+            // Return back to the trip
+            Response.Redirect(Href("~/Trips/Trip", transactionToDisplay.TripId));
+        }
+        else if ( string.IsNullOrEmpty(Request["moveNewTripName"]) == false )
+        {
+            int oldTripId = transactionToDisplay.TripId;
+            string newTripName = Request["moveNewTripName"];
+
+            transactionToDisplay.TripId = model.Trips.Single(trip => trip.Name == newTripName).Id;
+            model.SaveChanges();
+
+            // Return back to the original trip
+            Response.Redirect(Href("~/Trips/Trip", oldTripId));
+        }
     }
 }
 
@@ -39,6 +54,34 @@
         </div>
     </section>
 }
+
+<script type="text/javascript">
+    /* When the user clicks on the button,
+    toggle between hiding and showing the dropdown content */
+    function myFunction() {
+        document.getElementById("myDropdown").classList.toggle("show");
+    }
+
+    // Close the dropdown menu if the user clicks outside of it
+    window.onclick = function (event) {
+        if (!event.target.matches('.trips-dropdown-button')) {
+            var dropdowns = document.getElementsByClassName("trips-dropdown-content");
+            var i;
+            for (i = 0; i < dropdowns.length; i++) {
+                var openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
+                }
+            }
+        }
+    }
+
+    function moveTransaction(newTripName) {
+        document.getElementById("moveNewTripName").value = newTripName;
+        document.getElementById("moveForm").submit();
+    }
+
+</script>
 
 @if ( WebSecurity.IsAuthenticated == true )
 {
@@ -75,18 +118,32 @@
     }
 
     <p></p>
-    <form method="post">
+    <div style="display:flex">
+        <a href="@Href(transactionToDisplay.IsBalance == false ? "~/Trips/EditTransaction" : "~/Trips/EditPayment", transactionId)"
+            class="btn" style="margin-right:8px">Edit</a>
         @{
-            if ( transactionToDisplay.IsBalance == false )
+            IEnumerable<Trip> otherTrips = model.Trips.Where(trip => trip.Id != transactionToDisplay.TripId);
+
+            if ( otherTrips.Count() > 0 )
             {
-                <a href="@Href("~/Trips/EditTransaction", transactionId)" class="btn">Edit</a>
-                <input type="submit" value="Delete" id="submit" onclick="return confirm( 'Are you sure you want to delete this transaction?');">
-            }
-            else
-            {
-                <a href="@Href("~/Trips/EditPayment", transactionId)" class="btn">Edit</a>
-                <input type="submit" value="Delete" id="submit" onclick="return confirm( 'Are you sure you want to delete this payment?');">
+                <div class="trips-dropdown-container">
+                    <button class="trips-dropdown-button" style="color:black" onclick="myFunction()">Move to ...</button>
+                    <div id="myDropdown" class="trips-dropdown-content">
+                        @foreach ( Trip otherTrip in otherTrips )
+                        {
+                            <span style="text-wrap-mode:nowrap" onclick="moveTransaction('@otherTrip.Name')">@otherTrip.Name</span><br/>
+                        }
+                    </div>
+                </div>
             }
         }
-    </form>
+        <form method="post">
+            <input type="submit" name="action" value="Delete" id="submit" onclick="return confirm( 'Are you sure you want to delete this item?');">
+        </form>
+
+        <form id="moveForm" method="post" style="display:none;">
+            <input type="hidden" id="moveNewTripName" name="moveNewTripName" value="" />
+        </form>
+
+    </div>
 }
