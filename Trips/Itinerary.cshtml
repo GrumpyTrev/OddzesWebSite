@@ -1,0 +1,62 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int tripId = UrlData[0].AsInt();
+
+    Trip tripToDisplay = model.Trips.SingleOrDefault(trip => trip.Id == tripId);
+
+    Page.Title = "Itinerary";
+
+    if ( IsPost == true )
+    {
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>@string.Format("This is the itinerary for trip {0}", tripToDisplay.Name)</p>
+
+                if ( tripToDisplay.Open == false )
+                {
+                    <p>This trip is closed. New itinerary items cannot be added or existing items updated.</p>
+                }
+                else if ( model.ItineraryItems.Any(item => item.TripId == tripToDisplay.Id) == false )
+                {
+                    <p>There is currently no itinerary for this trip.Use the button below to add new itinerary items</p>
+                }
+            }
+            else
+            {
+                <p>Please login to display the itinerary for this trip</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    // Get the itinerary items for this trip.
+    List<ItineraryItem> itineraryItems = model.ItineraryItems.Where(item => ( item.TripId == tripId ) )
+        .OrderBy(item => item.Date).ToList();
+
+    if ( itineraryItems.Count > 0 )
+    {
+        <form id="tripForm" method="post">
+            @HtmlHelpers.DisplayItinerary(itineraryItems, tripToDisplay.Open)
+        </form>
+    }
+    <p></p>
+
+    if ( tripToDisplay.Open == true )
+    {
+        <a href="@Href("~/Trips/AddItineraryItem", tripId)" class="btn">Add item</a>
+    }
+}

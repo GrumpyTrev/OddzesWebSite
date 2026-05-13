@@ -188,47 +188,15 @@
                             <tr>
                                 <td style="padding-left:10px">
                                     <details>
-                                        <summary style="font-size:1.5em">Itinerary</summary>
+                                        <summary style="font-size:1.5em">Itinerary
+                                            <a href="@Href("~/Trips/Itinerary", trip.Id)" 
+                                                class="btn" style="height:24px; padding:0px">
+                                                <i class='material-icons'>open_in_new</i>
+                                            </a>
+                                        </summary>
                                         <div style="margin-left: 16px;">
-                                            <table>
-                                                @{
-                                                    IEnumerable<ItineraryItem> itineraryItems = model.ItineraryItems
-                                                        .Where(item => item.TripId == trip.Id).OrderBy(item => item.Date);
-
-                                                    // Keep track of which day is being displayed
-                                                    string dateString = "";
-
-                                                    foreach ( ItineraryItem item in itineraryItems )
-                                                    {
-                                                        string thisDateString = item.Date.ToString("dddd dd MMM yyyy");
-
-                                                        // Already displaying transactions for this day for this month?
-                                                        if ( dateString != thisDateString )
-                                                        {
-                                                            dateString = thisDateString;
-                                                            <tr><td><strong>@dateString</strong></td></tr>
-                                                        }
-
-                                                        <tr>
-                                                            <td style="padding-left:10px;">
-                                                                @if ( item.Time != null )
-                                                                {
-                                                                    <strong>@item.Time.Value.ToString("HH:mm") </strong>
-                                                                    if ( item.EndTime != null )
-                                                                    {
-                                                                        <strong>- @item.EndTime.Value.ToString("HH:mm") </strong>
-                                                                    }
-                                                                }
-                                                                <strong>@item.Title</strong>
-                                                                @if ( item.Details.IsEmpty() == false )
-                                                                { 
-                                                                    <br /><span>@item.Details</span>
-                                                                }
-                                                            </td>
-                                                        </tr>
-                                                    }
-                                                }
-                                            </table>
+                                            @HtmlHelpers.DisplayItinerary(model.ItineraryItems.
+                                                Where(item => item.TripId == trip.Id).OrderBy(item => item.Date), false )
                                         </div>
                                     </details>
                                 </td>

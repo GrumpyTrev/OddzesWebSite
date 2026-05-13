@@ -9,7 +9,7 @@
     else
     {
         <span>
-            @string.Format("From {0} to {1}", HelperMethods.UserNameString(trans.WhoId), 
+            @string.Format("From {0} to {1}", HelperMethods.UserNameString(trans.WhoId),
                 HelperMethods.UserNameString(trans.PaidToId))
         </span>
     }
@@ -87,7 +87,7 @@
     }
 }
 
-@helper DisplayExpenses( IEnumerable<UserExpense> expenses, int currencyId, Trip associatedTrip, bool open )
+@helper DisplayExpenses(IEnumerable<UserExpense> expenses, int currencyId, Trip associatedTrip, bool open)
 {
     <table>
         @foreach ( UserExpense userExpense in expenses )
@@ -119,4 +119,64 @@
             }
         }
     </table>
+}
+
+@helper DisplayItineraryItem(ItineraryItem item, bool open)
+{
+    string titleString = "";
+
+    if ( item.Time != null )
+    {
+        titleString = item.Time.Value.ToString("HH:mm") + ' ';
+
+        if ( item.EndTime != null )
+        {
+            titleString += string.Format("- {0} ", item.EndTime.Value.ToString("HH:mm"));
+        }
+    }
+
+    titleString += item.Title;
+
+    if ( open == true )
+    {
+        <a href="@Href("~/Trips/ItineraryItem", item.Id)" style="padding:0px;"><strong>@titleString</strong></a>
+    }
+    else
+    {
+        <span><strong>@titleString</strong></span>
+    }
+    
+    if ( item.Details.IsEmpty() == false )
+    {
+        <br /><span>@item.Details</span>
+    }
+}
+
+@helper DisplayItinerary(IEnumerable<ItineraryItem> items, bool open, string noContentMessage = "")
+{
+    if ( ( noContentMessage.Length > 0 ) && ( items.Count() == 0 ) )
+    {
+        <span>@noContentMessage</span>
+    }
+    else
+    {
+        // Keep track of which day is being displayed
+        string dateString = "";
+        <table>
+            @foreach ( ItineraryItem item in items )
+            {
+                string thisDateString = item.Date.ToString("dddd dd MMM yyyy");
+
+                // Already displaying itinerary items for this day for this month?
+                if ( dateString != thisDateString )
+                {
+                    dateString = thisDateString;
+                    <tr><td><strong>@dateString</strong></td></tr>
+                }
+                <tr>
+                    <td style="padding-left:10px;">@HtmlHelpers.DisplayItineraryItem(item, open)</td>
+                </tr>
+            }
+        </table>
+    }
 }
