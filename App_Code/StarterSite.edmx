@@ -53,6 +53,15 @@
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="Content" Type="image" Nullable="false" />
         </EntityType>
+        <EntityType Name="ExpenseRecord">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Title" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="TripId" Type="int" Nullable="false" />
+          <Property Name="Open" Type="bit" Nullable="false" />
+        </EntityType>
         <EntityType Name="Game">
           <Key>
             <PropertyRef Name="Id" />
@@ -69,6 +78,19 @@
           <Property Name="Them" Type="int" Nullable="false" />
           <Property Name="Complete" Type="bit" Nullable="false" />
           <Property Name="Lane" Type="bit" />
+        </EntityType>
+        <EntityType Name="ItineraryItem">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Title" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="TripId" Type="int" Nullable="false" />
+          <Property Name="Date" Type="datetime" Nullable="false" />
+          <Property Name="Time" Type="datetime" />
+          <Property Name="Details" Type="nvarchar" MaxLength="1000" />
+          <Property Name="ItemIndex" Type="int" Nullable="false" />
+          <Property Name="EndTime" Type="datetime" />
         </EntityType>
         <EntityType Name="Score">
           <Key>
@@ -119,7 +141,8 @@
           <Property Name="WhoId" Type="int" Nullable="false" />
           <Property Name="PaidToId" Type="int" Nullable="false" />
           <Property Name="IsBalance" Type="bit" Nullable="false" />
-          <Property Name="ShareCount" Type="int" />
+          <Property Name="ShareCount" Type="int" Nullable="false" />
+          <Property Name="ExpensesId" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="Trip">
           <Key>
@@ -217,7 +240,9 @@
           <EntitySet Name="Currency" EntityType="Self.Currency" store:Type="Tables" />
           <EntitySet Name="Documents" EntityType="Self.Documents" store:Type="Tables" />
           <EntitySet Name="DocumentStorage" EntityType="Self.DocumentStorage" store:Type="Tables" />
+          <EntitySet Name="ExpenseRecord" EntityType="Self.ExpenseRecord" store:Type="Tables" />
           <EntitySet Name="Game" EntityType="Self.Game" store:Type="Tables" />
+          <EntitySet Name="ItineraryItem" EntityType="Self.ItineraryItem" store:Type="Tables" />
           <EntitySet Name="Score" EntityType="Self.Score" store:Type="Tables" />
           <EntitySet Name="Sets" EntityType="Self.Sets" store:Type="Tables" />
           <EntitySet Name="Sharer" EntityType="Self.Sharer" store:Type="Tables" />
@@ -380,8 +405,10 @@
           <EntitySet Name="Trips" EntityType="StarterSiteModel.Trip" />
           <EntitySet Name="Trippers" EntityType="StarterSiteModel.Tripper" />
           <EntitySet Name="Currencies" EntityType="StarterSiteModel.Currency" />
-          <EntitySet Name="Transactions" EntityType="StarterSiteModel.Transaction" />
           <EntitySet Name="Sharers" EntityType="StarterSiteModel.Sharer" />
+          <EntitySet Name="Transactions" EntityType="StarterSiteModel.Transaction" />
+          <EntitySet Name="ExpenseRecords" EntityType="StarterSiteModel.ExpenseRecord" />
+          <EntitySet Name="ItineraryItems" EntityType="StarterSiteModel.ItineraryItem" />
         </EntityContainer>
         <EntityType Name="DocumentStorage">
           <Key>
@@ -418,6 +445,15 @@
           <Property Name="Rate" Type="Double" Nullable="false" />
           <Property Name="RateDate" Type="DateTime" Nullable="false" Precision="3" />
         </EntityType>
+        <EntityType Name="Sharer">
+          <Key>
+            <PropertyRef Name="TransactionId" />
+            <PropertyRef Name="UserId" />
+          </Key>
+          <Property Name="TransactionId" Type="Int32" Nullable="false" />
+          <Property Name="UserId" Type="Int32" Nullable="false" />
+          <Property Name="Parts" Type="Int32" Nullable="false" />
+        </EntityType>
         <EntityType Name="Transaction">
           <Key>
             <PropertyRef Name="Id" />
@@ -433,16 +469,30 @@
           <Property Name="WhoId" Type="Int32" Nullable="false" />
           <Property Name="PaidToId" Type="Int32" Nullable="false" />
           <Property Name="IsBalance" Type="Boolean" Nullable="false" />
-          <Property Name="ShareCount" Type="Int32" />
+          <Property Name="ShareCount" Type="Int32" Nullable="false" />
+          <Property Name="ExpensesId" Type="Int32" Nullable="false" />
         </EntityType>
-        <EntityType Name="Sharer">
+        <EntityType Name="ExpenseRecord">
           <Key>
-            <PropertyRef Name="TransactionId" />
-            <PropertyRef Name="UserId" />
+            <PropertyRef Name="Id" />
           </Key>
-          <Property Name="TransactionId" Type="Int32" Nullable="false" />
-          <Property Name="UserId" Type="Int32" Nullable="false" />
-          <Property Name="Parts" Type="Int32" Nullable="false" />
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Title" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="TripId" Type="Int32" Nullable="false" />
+          <Property Name="Open" Type="Boolean" Nullable="false" />
+        </EntityType>
+        <EntityType Name="ItineraryItem">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Title" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="TripId" Type="Int32" Nullable="false" />
+          <Property Name="Date" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="Time" Type="DateTime" Precision="3" />
+          <Property Name="Details" Type="String" MaxLength="1000" FixedLength="false" Unicode="true" />
+          <Property Name="ItemIndex" Type="Int32" Nullable="false" />
+          <Property Name="EndTime" Type="DateTime" Precision="3" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -618,9 +668,19 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="Sharers">
+            <EntityTypeMapping TypeName="StarterSiteModel.Sharer">
+              <MappingFragment StoreEntitySet="Sharer">
+                <ScalarProperty Name="Parts" ColumnName="Parts" />
+                <ScalarProperty Name="UserId" ColumnName="UserId" />
+                <ScalarProperty Name="TransactionId" ColumnName="TransactionId" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           <EntitySetMapping Name="Transactions">
             <EntityTypeMapping TypeName="StarterSiteModel.Transaction">
               <MappingFragment StoreEntitySet="Transaction">
+                <ScalarProperty Name="ExpensesId" ColumnName="ExpensesId" />
                 <ScalarProperty Name="ShareCount" ColumnName="ShareCount" />
                 <ScalarProperty Name="IsBalance" ColumnName="IsBalance" />
                 <ScalarProperty Name="PaidToId" ColumnName="PaidToId" />
@@ -636,12 +696,27 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="Sharers">
-            <EntityTypeMapping TypeName="StarterSiteModel.Sharer">
-              <MappingFragment StoreEntitySet="Sharer">
-                <ScalarProperty Name="Parts" ColumnName="Parts" />
-                <ScalarProperty Name="UserId" ColumnName="UserId" />
-                <ScalarProperty Name="TransactionId" ColumnName="TransactionId" />
+          <EntitySetMapping Name="ExpenseRecords">
+            <EntityTypeMapping TypeName="StarterSiteModel.ExpenseRecord">
+              <MappingFragment StoreEntitySet="ExpenseRecord">
+                <ScalarProperty Name="Open" ColumnName="Open" />
+                <ScalarProperty Name="TripId" ColumnName="TripId" />
+                <ScalarProperty Name="Title" ColumnName="Title" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ItineraryItems">
+            <EntityTypeMapping TypeName="StarterSiteModel.ItineraryItem">
+              <MappingFragment StoreEntitySet="ItineraryItem">
+                <ScalarProperty Name="EndTime" ColumnName="EndTime" />
+                <ScalarProperty Name="ItemIndex" ColumnName="ItemIndex" />
+                <ScalarProperty Name="Details" ColumnName="Details" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="Date" ColumnName="Date" />
+                <ScalarProperty Name="TripId" ColumnName="TripId" />
+                <ScalarProperty Name="Title" ColumnName="Title" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

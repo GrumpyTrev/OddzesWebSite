@@ -35,20 +35,6 @@
     }
 }
 
-@functions
-{
-    //
-    // String representation of a trip date
-    //
-    string TripDateString(DateTime tripDate)
-    {
-        int gameDay = tripDate.Day;
-
-        return string.Format("{0:ddd d}{1} {0:MMM yyyy}", tripDate, ( ( ( gameDay % 10 == 1 ) && ( gameDay != 11 ) ) ? "st" :
-                      ( ( gameDay % 10 == 2 ) && ( gameDay != 12 ) ) ? "nd" : ( ( gameDay % 10 == 3 ) && ( gameDay != 13 ) ) ? "rd" : "th" ));
-    }
-}
-
 <script type="text/javascript">
     function deleteTrip(tripId, anyTransactions, name) {
         if (anyTransactions = true) {
@@ -76,11 +62,11 @@
             {
                 if ( model.Trips.Count() > 0 )
                 {
-                    <p>Click on a trip name to display further details</p>
+                    <p>These are the available trips. Details can be shown by clicking on a category, or edited by opening the category</p>
                 }
                 else
                 {
-                    <p>There are no trips available</p>
+                    <p>There are no trips available. Use the button below to add a trip</p>
                 }
             }
             else
@@ -90,6 +76,7 @@
         </div>
     </section>
 }
+
 
 @if ( WebSecurity.IsAuthenticated == true )
 {
@@ -107,38 +94,160 @@
                     {
                         <tr><td colspan="5" class="tdNoPad"><strong>@( openState == true ? "Open trips" : "Closed trips" )</strong></td></tr>
 
-                        foreach ( Trip trip in model.Trips.Where( trip => trip.Open == openState ) )
+                        foreach ( Trip trip in model.Trips.Where(trip => trip.Open == openState) )
                         {
+                            // Display the trip name with edit and delete buttons
                             <tr>
-                                <td class="tdNoPad" style="font-size: 1.75em;"><a href="@Href("~/Trips/Trip", trip.Id)">@trip.Name</a></td>
-                                <td class="tdNoPad">
+                                <td class="tdNoPad" style="font-size: 1.75em;">
+                                    @trip.Name
                                     <a href="@Href("~/Trips/EditTrip", trip.Name)" class="btn" style="height:24px; padding:0px">
                                         <i class='material-icons'>edit</i>
                                     </a>
-                                </td>
-                                @{
-                                    // Only display the delete button for open trips
-                                    if ( trip.Open == true )
+                                    @if ( trip.Open == true )
                                     {
-                                        <td class="tdNoPad">
-                                            <button class="btn" style="height:24px; padding:0px"
-                                                    onclick="@string.Format("deleteTrip( {0}, '{1}', '{2}');", trip.Id,
-                                                                             model.Transactions.Any(trans => trans.TripId == trip.Id), trip.Name)"
-                                                    type="button">
-                                                <i class='material-icons'>delete</i>
-                                            </button>
-                                        </td>
+                                        // Only display the delete button for open trips
+                                        <button class="btn" style="height:24px; padding:0px"
+                                                onclick="@string.Format("deleteTrip( {0}, '{1}', '{2}');", trip.Id,
+                                                            model.Transactions.Any(trans => trans.TripId == trip.Id), trip.Name)"
+                                                type="button">
+                                            <i class='material-icons'>delete</i>
+                                        </button>
                                     }
-                                }
+                                </td>
                             </tr>
-                            }
+
+                            // Display the expenses (transactions) in a details element. Add an 'open' button for the transactions
+                            <tr>
+                                <td style="padding-left:10px">
+                                    <details>
+                                        <summary style="font-size:1.5em">Expenses
+                                            <a href="@Href("~/Trips/Expenses", trip.Id, 0)" class="btn" style="height:24px; padding:0px">
+                                                <i class='material-icons'>open_in_new</i>
+                                            </a>
+                                        </summary>
+                                        <div style="margin-left: 16px;">
+                                            @{
+                                                // Display any closed expense records associated with this trip
+                                                IEnumerable<ExpenseRecord> expenseRecord = model.ExpenseRecords
+                                                    .Where(exp => ( exp.TripId == trip.Id ) && ( exp.Open == false ));
+
+                                                foreach ( ExpenseRecord record in expenseRecord )
+                                                {
+                                                    // Display the expense record name with an open button, followed by
+                                                    // the transactions
+                                                    <details>
+                                                        <summary>@record.Title [closed]
+                                                            <a href="@Href("~/Trips/Expenses", trip.Id, record.Id)" 
+                                                               class="btn" style="height:24px; padding:0px">
+                                                                <i class='material-icons'>open_in_new</i>
+                                                            </a>
+                                                        </summary>
+                                                        <div style="margin-left: 16px;">
+                                                            @{
+                                                                // Display the transactions associated with this record
+                                                                @HtmlHelpers.DisplayTransactions(model.Transactions
+                                                                    .Where(trans => ( trans.ExpensesId == record.Id ))
+                                                                    .OrderByDescending(trans => trans.Date)
+                                                                    .ThenByDescending(trans => trans.Id), true);
+                                                            }
+                                                        </div>
+                                                    </details>
+                                                }
+
+                                                // Display current transactions if there are any
+                                                @HtmlHelpers.DisplayTransactions(model.Transactions
+                                                    .Where(trans => ( trans.TripId == trip.Id ) && ( trans.ExpensesId == 0 ))
+                                                    .OrderByDescending(trans => trans.Date)
+                                                    .ThenByDescending(trans => trans.Id), true,
+                                                    "There are no expenses");
+                                            }
+                                        </div>
+                                    </details>
+                                </td>
+                            </tr>
+
+                            // Display the balance for the currently open expenses. Display read-only.
+                            <tr>
+                                <td style="padding-left:10px">
+                                    <details>
+                                        <summary style="font-size:1.5em">Balance
+                                            <a href="@Href("~/Trips/Expenses", trip.Id, 0)" 
+                                               class="btn" style="height:24px; padding:0px">
+                                                <i class='material-icons'>open_in_new</i>
+                                            </a>
+                                        </summary>
+                                        <div style="margin-left: 16px;">
+                                            @HtmlHelpers.DisplayExpenses( 
+                                                Expenses.GetExpensesForTrip(trip.Id, HelperMethods.SterlingId(), 0).UserExpenses, 
+                                                HelperMethods.SterlingId(), 
+                                                trip, false)
+                                        </div>
+                                    </details>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left:10px">
+                                    <details>
+                                        <summary style="font-size:1.5em">Itinerary</summary>
+                                        <div style="margin-left: 16px;">
+                                            <table>
+                                                @{
+                                                    IEnumerable<ItineraryItem> itineraryItems = model.ItineraryItems
+                                                        .Where(item => item.TripId == trip.Id).OrderBy(item => item.Date);
+
+                                                    // Keep track of which day is being displayed
+                                                    string dateString = "";
+
+                                                    foreach ( ItineraryItem item in itineraryItems )
+                                                    {
+                                                        string thisDateString = item.Date.ToString("dddd dd MMM yyyy");
+
+                                                        // Already displaying transactions for this day for this month?
+                                                        if ( dateString != thisDateString )
+                                                        {
+                                                            dateString = thisDateString;
+                                                            <tr><td><strong>@dateString</strong></td></tr>
+                                                        }
+
+                                                        <tr>
+                                                            <td style="padding-left:10px;">
+                                                                @if ( item.Time != null )
+                                                                {
+                                                                    <strong>@item.Time.Value.ToString("HH:mm") </strong>
+                                                                    if ( item.EndTime != null )
+                                                                    {
+                                                                        <strong>- @item.EndTime.Value.ToString("HH:mm") </strong>
+                                                                    }
+                                                                }
+                                                                <strong>@item.Title</strong>
+                                                                @if ( item.Details.IsEmpty() == false )
+                                                                { 
+                                                                    <br /><span>@item.Details</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            </table>
+                                        </div>
+                                    </details>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left:10px">
+                                    <details>
+                                        <summary style="font-size:1.5em">Activities/Ideas</summary>
+                                    </details>
+                                </td>
+                            </tr>
                         }
                     }
+                }
             </table>
         </form>
     }
 
     <p></p>
     <a href="~/Trips/AddTrip" class="btn">Add trip</a>
- }
+}
 

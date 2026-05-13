@@ -1,0 +1,119 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int tripId = UrlData[0].AsInt();
+
+    // This is the expenses record the transactions are associated with. 0 means the currently open transactions
+    int expensesRecordId = UrlData[1].AsInt();
+
+    ExpenseRecord expenseRecord = model.ExpenseRecords.SingleOrDefault(exp => exp.Id == expensesRecordId);
+
+    Trip tripToDisplay = model.Trips.SingleOrDefault(trip => trip.Id == tripId);
+
+    // Initialise the default currency for expenses
+    string expensesCurrency = "Sterling";
+
+    Page.Title = expenseRecord == null ? "Current expenses" : string.Format("{0} expenses", expenseRecord.Title);
+
+    if ( IsPost == true )
+    {
+        // Has there been a change to the selected currency
+        if ( string.IsNullOrEmpty(Request["currency"]) == false )
+        {
+            expensesCurrency = Request["currency"];
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                if ( expensesRecordId == 0 )
+                { 
+                   <p>@string.Format("These are the current expenses for trip {0}", tripToDisplay.Name)</p>
+                }
+                else
+                { 
+                    <p>@string.Format("These are historical expenses for trip {0}", tripToDisplay.Name)</p>
+                }
+
+                if ( tripToDisplay.Open == false )
+                {
+                    <p>This trip is closed.New transactions cannot be added or existing transactions updated.</p>
+                }
+
+                if ( model.Transactions.Any(trans => ( trans.TripId == tripToDisplay.Id ) && ( trans.ExpensesId == 0 ) ) == false )
+                {
+                    <p>There are currently no expenses for this trip</p>
+                }
+            }
+            else
+            {
+                <p>Please login to display the expenses for this trip</p>
+            }
+        </div>
+    </section>
+}
+
+<script type="text/javascript">
+    function OnCurrencyChange() {
+        document.getElementById('currency').value = document.getElementById('currencyItems').value;
+        document.getElementById('tripForm').submit();
+    }
+</script>
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    // Get the selected currency id
+    int currencyId = model.Currencies.Single(cur => cur.Name == expensesCurrency).Id;
+
+    // Get the transactions for this trip, and associated with the specified expense record
+    List<Transaction> tripTransactions = model.Transactions
+        .Where(trans => ( trans.TripId == tripToDisplay.Id) && ( trans.ExpensesId == expensesRecordId) )
+        .OrderByDescending(trans => trans.Date).ThenByDescending(trans => trans.Id).ToList();
+
+    if ( tripTransactions.Count > 0 )
+    {
+        // Display the totals and who paid for what (all in the selected currency)
+        // If the transaction is in the selected currency then use the amount in the transaction.
+        // If the selected currency is sterling then use the sterling amounts in the transaction
+        // Otherwise two convertions are required -  from transaction amount to sterling and from sterling to selected currency
+
+        Expenses expenses = Expenses.GetExpensesForTrip(tripId, currencyId, expensesRecordId);
+
+        <form id="tripForm" method="post">
+            <input type="hidden" id="currency" name="currency" value="" />
+
+            <table>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td>@HelperMethods.AmountString(expenses.TotalExpenses, currencyId)</td>
+                    <td>
+                        @{
+                            // Get a list of the available currency names
+                            List<SelectListItem> currencyItems = model.Currencies.Select(cur => new SelectListItem
+                            { Value = cur.Name, Text = cur.Name, Selected = ( cur.Name == expensesCurrency ) }).ToList();
+                        }
+                        @Html.DropDownList("currencyItems", currencyItems, new { onChange = "OnCurrencyChange();" })
+                    </td>
+                </tr>
+            </table>
+            @HtmlHelpers.DisplayExpenses( expenses.UserExpenses, currencyId, tripToDisplay, 
+                ( tripToDisplay.Open == true ) && ( expensesRecordId == 0 ) )
+            @HtmlHelpers.DisplayTransactions(tripTransactions,  ( tripToDisplay.Open == false ) || ( expensesRecordId != 0 ))
+        </form>
+    }
+    <p></p>
+
+    if ( tripToDisplay.Open == true )
+    {
+        <a href="@Href("~/Trips/AddTransaction", tripId)" class="btn">Add transaction</a>
+    }
+}

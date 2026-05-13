@@ -62,7 +62,7 @@
                 model.SaveChanges();
 
                 // Return back to the trip, not the transaction
-                Response.Redirect(Href("~/Trips/Trip", transactionToEdit.TripId));
+                Response.Redirect(Href("~/Trips/Expenses", transactionToEdit.TripId, 0));
             }
         }
         else

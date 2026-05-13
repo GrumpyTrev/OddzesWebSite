@@ -53,6 +53,14 @@ public partial class DocumentStorage
     public byte[] Content { get; set; }
 }
 
+public partial class ExpenseRecord
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public int TripId { get; set; }
+    public bool Open { get; set; }
+}
+
 public partial class Game
 {
     public int Id { get; set; }
@@ -67,6 +75,18 @@ public partial class Game
     public int Them { get; set; }
     public bool Complete { get; set; }
     public Nullable<bool> Lane { get; set; }
+}
+
+public partial class ItineraryItem
+{
+    public int Id { get; set; }
+    public string Title { get; set; }
+    public int TripId { get; set; }
+    public System.DateTime Date { get; set; }
+    public Nullable<System.DateTime> Time { get; set; }
+    public string Details { get; set; }
+    public int ItemIndex { get; set; }
+    public Nullable<System.DateTime> EndTime { get; set; }
 }
 
 public partial class Score
@@ -112,7 +132,8 @@ public partial class Transaction
     public int WhoId { get; set; }
     public int PaidToId { get; set; }
     public bool IsBalance { get; set; }
-    public Nullable<int> ShareCount { get; set; }
+    public int ShareCount { get; set; }
+    public int ExpensesId { get; set; }
 }
 
 public partial class Trip

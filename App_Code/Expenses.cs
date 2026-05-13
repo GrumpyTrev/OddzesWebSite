@@ -8,9 +8,9 @@ using System.Linq;
 /// </summary>
 public class Expenses
 {
-    public static Expenses GetExpensesForTrip(int tripId, int currencyId)
+    public static Expenses GetExpensesForTrip(int tripId, int currencyId, int expensesRecordId = 0)
     {
-        return new Expenses(tripId, currencyId);
+        return new Expenses(tripId, currencyId, expensesRecordId);
     }
 
     public int TripId { get; set; }
@@ -21,7 +21,7 @@ public class Expenses
 
     public List<UserExpense> UserExpenses { get; set; }
 
-    private Expenses(int tripId, int currencyId)
+    private Expenses(int tripId, int currencyId, int expensesRecordId )
     {
         TripId = tripId;
         CurrencyId = currencyId;
@@ -29,8 +29,9 @@ public class Expenses
 
         StarterSiteEntities model = new StarterSiteEntities();
 
-        // Get all the transactions associated with the specified trip
-        IEnumerable<Transaction> tripTransactions = model.Transactions.Where(tran => tran.TripId == tripId);
+        // Get all the transactions associated with the specified trip. Only consider those in the specified expense record
+        IEnumerable<Transaction> tripTransactions = model.Transactions.
+            Where(tran => ( tran.TripId == tripId ) && ( tran.ExpensesId == expensesRecordId ) );
 
         // Add up all the expenses associated with the current trip and convert to the specified currency
         IEnumerable<Transaction> expenses = tripTransactions.Where(tran => tran.IsBalance == false);

@@ -1,0 +1,122 @@
+﻿@helper TransactionEntry(Transaction trans)
+{
+    <strong>@trans.Title</strong>
+    <br />
+    if ( trans.IsBalance == false )
+    {
+        <span>@string.Format("Paid by {0}", HelperMethods.UserNameString(trans.WhoId))</span>
+    }
+    else
+    {
+        <span>
+            @string.Format("From {0} to {1}", HelperMethods.UserNameString(trans.WhoId), 
+                HelperMethods.UserNameString(trans.PaidToId))
+        </span>
+    }
+}
+
+@helper TransactionSummary(Transaction trans, bool open)
+{
+    if ( open == true )
+    {
+        <a href="@Href("~/Trips/Transaction", trans.Id)" style="padding:0px;">@TransactionEntry(trans)</a>
+    }
+    else
+    {
+        <span>@TransactionEntry(trans)</span>
+    }
+}
+
+
+@helper PaymentEntry(Trip tripToDisplay, int fromUserId, int toUserId, double amount, int currencyId, bool open)
+{
+    <td>
+        @if ( open == true )
+        {
+            <a href="@Href("~/Trips/AddPayment", tripToDisplay.Id, fromUserId, toUserId, amount, currencyId)" style="padding:0px;">
+                Owes @HelperMethods.AmountString(amount, currencyId) to @HelperMethods.UserNameString(toUserId)
+            </a>
+        }
+        else
+        {
+            <span>Owes @HelperMethods.AmountString(amount, currencyId) to @HelperMethods.UserNameString(toUserId)</span>
+        }
+    </td>
+}
+
+@helper DisplayTransactions(IEnumerable<Transaction> transactions, bool readOnly, string noContentMessage = "")
+{
+    if ( ( noContentMessage.Length > 0 ) && ( transactions.Count() == 0 ) )
+    {
+        <span>@noContentMessage</span>
+    }
+    else
+    {
+        // Keep track of which day is being displayed
+        string dateString = "";
+
+        <table>
+            @foreach ( Transaction trans in transactions )
+            {
+                string thisDateString = trans.Date.ToString("d MMM yyyy");
+
+                // Already displaying transactions for this day for this month?
+                if ( dateString != thisDateString )
+                {
+                    dateString = thisDateString;
+                    <tr><td><strong>@dateString</strong></td></tr>
+                }
+
+                <tr>
+                    <td style="padding-left:10px;">@HtmlHelpers.TransactionSummary(trans, !readOnly)</td>
+
+                    @if ( trans.CurrencyId == HelperMethods.SterlingId() )
+                    {
+                        <td class="tdNoPad"><strong>@HelperMethods.AmountString(trans.LocalValue, trans.CurrencyId)</strong></td>
+                    }
+                    else
+                    {
+                        <td class="tdNoPad">
+                            <strong>@HelperMethods.AmountString(trans.LocalValue, trans.CurrencyId)</strong><br />
+                            (@HelperMethods.AmountString(trans.SterlingValue, HelperMethods.SterlingId()))
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    }
+}
+
+@helper DisplayExpenses( IEnumerable<UserExpense> expenses, int currencyId, Trip associatedTrip, bool open )
+{
+    <table>
+        @foreach ( UserExpense userExpense in expenses )
+        {
+            <tr>
+                <td><strong>@userExpense.UserName</strong></td>
+                <td>@HelperMethods.AmountString(userExpense.Paid, currencyId)</td>
+
+                @if ( userExpense.Payments.Count > 0 )
+                {
+                    // Put the first payment on the same line as the total paid and then list any additional payments on separate
+                    // lines below
+                    @HtmlHelpers.PaymentEntry(associatedTrip, userExpense.UserId, userExpense.Payments[0].ToUserId,
+                            userExpense.Payments[0].Amount, currencyId, open)
+                }
+            </tr>
+
+            // If there are additional payments then list these on separate lines below the first payment
+            if ( userExpense.Payments.Count > 1 )
+            {
+                foreach ( BalancePayment payment in userExpense.Payments.Skip(1) )
+                {
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        @HtmlHelpers.PaymentEntry(associatedTrip, userExpense.UserId, payment.ToUserId, payment.Amount, currencyId, open)
+                    </tr>
+                }
+            }
+        }
+    </table>
+}
