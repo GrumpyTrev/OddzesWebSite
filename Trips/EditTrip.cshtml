@@ -2,9 +2,9 @@
     Layout = "~/Trips/_TripsLayout.cshtml";
     StarterSiteEntities model = new StarterSiteEntities();
 
-    string tripName = UrlData[0];
+    int tripId = UrlData[0].AsInt();
+    Trip tripToEdit = model.Trips.SingleOrDefault(trip => trip.Id == tripId);
 
-    Trip tripToEdit = model.Trips.SingleOrDefault(trip => trip.Name == tripName);
     Page.Title = "Edit trip " + tripToEdit.Name;
 
     // Initialise general page variables
@@ -112,7 +112,7 @@
                     <li>
                         <div class="flex-input">
                             <label for="name">Name</label>
-                            <input type="text" id="name" name="name" value="@tripName" @Validation.For("name") />
+                            <input type="text" id="name" name="name" value="@name" @Validation.For("name") />
                             @* Write any user name validation errors to the page *@
                             @Html.ValidationMessage("name")
                         </div>
