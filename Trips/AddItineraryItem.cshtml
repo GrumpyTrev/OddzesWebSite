@@ -1,0 +1,135 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int tripId = UrlData[0].AsInt();
+    string tripName = model.Trips.Single(trip => trip.Id == tripId).Name;
+
+    Page.Title = "Add itinerary item to trip " + tripName;
+
+    // Initialise general page variables
+    string title = "";
+    string dateString = DateTime.Now.ToString("dd/MM/yyyy");
+    string startTimeString = "";
+    string endTimeString = "";
+    int itemIndex = 0;
+    string details = "";
+
+    // Setup validation
+    Validation.RequireField("title", "You must specify an item name.");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        title = Request.Form["title"];
+        dateString = Request.Form["date"];
+        startTimeString = Request.Form["startTime"];
+        endTimeString = Request.Form["endTime"];
+        details = Request.Form["details"];
+
+        // Convert the date string in dd/mm/yy format into a datetime to get around mobile/pc local differences
+        DateTime date = DateTime.ParseExact(dateString, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        // If a start time was specified, convert the time string into a datetime
+        DateTime? startTime = startTimeString.Length > 0 ? ( DateTime? )DateTime.ParseExact(startTimeString, "H:m",
+            System.Globalization.CultureInfo.InvariantCulture) : null;
+
+        // If an end time was specified, convert the time string into a datetime
+        DateTime? endTime = endTimeString.Length > 0 ? ( DateTime? )DateTime.ParseExact(endTimeString, "H:m",
+            System.Globalization.CultureInfo.InvariantCulture) : null;
+
+        // Check for 'action' values first
+        if ( Request["action"] == "Add item" )
+        {
+            if ( Validation.IsValid() == true )
+            {
+                // Add a new itinerary item to the trip
+                model.ItineraryItems.Add(new ItineraryItem
+                {
+                    Title = title,
+                    Date = date,
+                    TripId = tripId,
+                    Time = startTime,
+                    EndTime = endTime,
+                    Details = details,
+                });
+
+                model.SaveChanges();
+
+                Response.Redirect(Href("~/Trips/Itinerary", tripId));
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.datepicker.setDefaults($.extend({ 'dateFormat': 'dd/mm/yy' }, $.datepicker.regional['uk']));
+        $("#date").datepicker();
+    });
+
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>Use the form below to add a new itinerary to the trip</p>
+            }
+            else
+            {
+                <p>Please login to add a new itinerary item</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form id="itineraryItemForm" method="post">
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Add new item</legend>
+            <ol>
+                <li>
+                    <label for="title">Title</label>
+                    <input style="width:auto" type="text" id="title" name="title" value="@title" @Validation.For("title") />
+                    @Html.ValidationMessage("title")
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="date">Date</label>
+                        @* Make the date field read only so that on mobiles the text input widget is not displayed *@
+                        <input style="width:auto" type="text" id="date" name="date" value="@dateString" readonly="readonly" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="startTime">Time</label>
+                        <input style="width:auto" type="time" id="time" name="startTime" value="@startTimeString" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="endTime">End Time</label>
+                        <input style="width:auto" type="time" id="time" name="endTime" value="@endTimeString" />
+                    </div>
+                </li>
+                <li>
+                    <div class="flex-input">
+                        <label for="details">Details</label>
+                        <textarea style="width:auto" id="details" name="details">@details</textarea>
+                    </div>
+                </li>
+            </ol>
+            <input type="submit" name="action" value="Add item" id="submit" />
+            <a href="@Href("~/Trips/Itinerary", tripId)" class="btn">Cancel</a>
+        </fieldset>
+    </form>
+}

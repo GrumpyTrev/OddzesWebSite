@@ -775,6 +775,11 @@ td {
     padding: 0.25em 0.5em 0.25em 0em;
 }
 
+.tdNoPadWrap {
+    padding: 0;
+    white-space: normal;
+}
+
 .col-1 {
     width: 45%
 }

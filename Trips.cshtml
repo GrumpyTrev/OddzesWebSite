@@ -98,7 +98,7 @@
                         {
                             // Display the trip name with edit and delete buttons
                             <tr>
-                                <td class="tdNoPad" style="font-size: 1.75em;">
+                                <td class="tdNoPadWrap" style="font-size: 1.75em;">
                                     @trip.Name
                                     <a href="@Href("~/Trips/EditTrip", trip.Id)" class="btn" style="height:24px; padding:0px">
                                         <i class='material-icons'>edit</i>
@@ -118,14 +118,14 @@
 
                             // Display the expenses (transactions) in a details element. Add an 'open' button for the transactions
                             <tr>
-                                <td style="padding-left:10px">
+                                <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.5em">Expenses
+                                        <summary style="font-size:1.25em">Expenses
                                             <a href="@Href("~/Trips/Expenses", trip.Id, 0)" class="btn" style="height:24px; padding:0px">
                                                 <i class='material-icons'>open_in_new</i>
                                             </a>
                                         </summary>
-                                        <div style="margin-left: 16px;">
+                                        <div style="margin-left: 10px;">
                                             @{
                                                 // Display any closed expense records associated with this trip
                                                 IEnumerable<ExpenseRecord> expenseRecord = model.ExpenseRecords
@@ -142,7 +142,7 @@
                                                                 <i class='material-icons'>open_in_new</i>
                                                             </a>
                                                         </summary>
-                                                        <div style="margin-left: 16px;">
+                                                        <div style="margin-left: 14px;">
                                                             @{
                                                                 // Display the transactions associated with this record
                                                                 @HtmlHelpers.DisplayTransactions(model.Transactions
@@ -168,15 +168,15 @@
 
                             // Display the balance for the currently open expenses. Display read-only.
                             <tr>
-                                <td style="padding-left:10px">
+                                <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.5em">Balance
+                                        <summary style="font-size:1.25em">Balance
                                             <a href="@Href("~/Trips/Expenses", trip.Id, 0)" 
                                                class="btn" style="height:24px; padding:0px">
                                                 <i class='material-icons'>open_in_new</i>
                                             </a>
                                         </summary>
-                                        <div style="margin-left: 16px;">
+                                        <div style="margin-left: 14px;">
                                             @HtmlHelpers.DisplayExpenses( 
                                                 Expenses.GetExpensesForTrip(trip.Id, HelperMethods.SterlingId(), 0).UserExpenses, 
                                                 HelperMethods.SterlingId(), 
@@ -186,15 +186,15 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td style="padding-left:10px">
+                                <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.5em">Itinerary
+                                        <summary style="font-size:1.25em">Itinerary
                                             <a href="@Href("~/Trips/Itinerary", trip.Id)" 
                                                 class="btn" style="height:24px; padding:0px">
                                                 <i class='material-icons'>open_in_new</i>
                                             </a>
                                         </summary>
-                                        <div style="margin-left: 16px;">
+                                        <div style="margin-left: 14px;">
                                             @HtmlHelpers.DisplayItinerary(model.ItineraryItems.
                                                 Where(item => item.TripId == trip.Id).OrderBy(item => item.Date), false )
                                         </div>
@@ -202,9 +202,9 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td style="padding-left:10px">
+                                <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.5em">Activities/Ideas</summary>
+                                        <summary style="font-size:1.25em">Activities/Ideas</summary>
                                     </details>
                                 </td>
                             </tr>

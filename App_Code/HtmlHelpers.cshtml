@@ -55,7 +55,7 @@
         // Keep track of which day is being displayed
         string dateString = "";
 
-        <table>
+        <table style="margin-top:0px">
             @foreach ( Transaction trans in transactions )
             {
                 string thisDateString = trans.Date.ToString("d MMM yyyy");
@@ -68,15 +68,15 @@
                 }
 
                 <tr>
-                    <td style="padding-left:10px;">@HtmlHelpers.TransactionSummary(trans, !readOnly)</td>
+                    <td class="tdNoPadWrap" style="padding-left:10px;">@TransactionSummary(trans, !readOnly)</td>
 
                     @if ( trans.CurrencyId == HelperMethods.SterlingId() )
                     {
-                        <td class="tdNoPad"><strong>@HelperMethods.AmountString(trans.LocalValue, trans.CurrencyId)</strong></td>
+                        <td class="tdNoPad" style="padding-left:5px;"><strong>@HelperMethods.AmountString(trans.LocalValue, trans.CurrencyId)</strong></td>
                     }
                     else
                     {
-                        <td class="tdNoPad">
+                        <td class="tdNoPad" style="padding-left:5px;">
                             <strong>@HelperMethods.AmountString(trans.LocalValue, trans.CurrencyId)</strong><br />
                             (@HelperMethods.AmountString(trans.SterlingValue, HelperMethods.SterlingId()))
                         </td>
@@ -89,7 +89,7 @@
 
 @helper DisplayExpenses(IEnumerable<UserExpense> expenses, int currencyId, Trip associatedTrip, bool open)
 {
-    <table>
+    <table style="margin-top:0px">
         @foreach ( UserExpense userExpense in expenses )
         {
             <tr>
@@ -100,7 +100,7 @@
                 {
                     // Put the first payment on the same line as the total paid and then list any additional payments on separate
                     // lines below
-                    @HtmlHelpers.PaymentEntry(associatedTrip, userExpense.UserId, userExpense.Payments[0].ToUserId,
+                    @PaymentEntry(associatedTrip, userExpense.UserId, userExpense.Payments[0].ToUserId,
                             userExpense.Payments[0].Amount, currencyId, open)
                 }
             </tr>
@@ -113,7 +113,7 @@
                     <tr>
                         <td></td>
                         <td></td>
-                        @HtmlHelpers.PaymentEntry(associatedTrip, userExpense.UserId, payment.ToUserId, payment.Amount, currencyId, open)
+                        @PaymentEntry(associatedTrip, userExpense.UserId, payment.ToUserId, payment.Amount, currencyId, open)
                     </tr>
                 }
             }
@@ -162,7 +162,7 @@
     {
         // Keep track of which day is being displayed
         string dateString = "";
-        <table>
+        <table style="margin-top:0px">
             @foreach ( ItineraryItem item in items )
             {
                 string thisDateString = item.Date.ToString("dddd dd MMM yyyy");
@@ -174,7 +174,7 @@
                     <tr><td><strong>@dateString</strong></td></tr>
                 }
                 <tr>
-                    <td style="padding-left:10px;">@HtmlHelpers.DisplayItineraryItem(item, open)</td>
+                    <td class="tdNoPadWrap" style="padding-left:10px;padding-bottom:3px">@DisplayItineraryItem(item, open)</td>
                 </tr>
             }
         </table>
