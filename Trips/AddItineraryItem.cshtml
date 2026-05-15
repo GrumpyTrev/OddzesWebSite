@@ -3,10 +3,15 @@
 
     StarterSiteEntities model = new StarterSiteEntities();
 
-    int tripId = UrlData[0].AsInt();
-    string tripName = model.Trips.Single(trip => trip.Id == tripId).Name;
+    // This page can be used to update or delete an existing itinerary item if it is called with an itinerary item id,
+    // otherwise it is used to add a new itinerary item to the trip specified by the trip id in the url.
+    // The trip id is always the first parameter in the url, and the itinerary item id is the second parameter
+    // if it is being used to update an existing item.
 
-    Page.Title = "Add itinerary item to trip " + tripName;
+    int tripId = UrlData[0].AsInt();
+    int itineraryItemId = UrlData[1].AsInt();
+
+    string tripName = model.Trips.Single(trip => trip.Id == tripId).Name;
 
     // Initialise general page variables
     string title = "";
@@ -15,6 +20,31 @@
     string endTimeString = "";
     int itemIndex = 0;
     string details = "";
+
+    // If an itinerary item id was specified, this page is being used to update an existing item,
+    // so populate the fields with the existing values
+    ItineraryItem itemToEdit = null;
+
+    if ( itineraryItemId > 0 )
+    {
+        itemToEdit = model.ItineraryItems.Single(item => item.Id == itineraryItemId);
+        title = itemToEdit.Title;
+        dateString = itemToEdit.Date.ToString("dd/MM/yyyy");
+        if ( itemToEdit.Time != null )
+        {
+            startTimeString = itemToEdit.Time.Value.ToString("HH:mm");
+        }
+        if ( itemToEdit.EndTime != null )
+        {
+            endTimeString = itemToEdit.EndTime.Value.ToString("HH:mm");
+        }
+        details = itemToEdit.Details;
+        Page.Title = "Edit itinerary item for trip " + tripName;
+    }
+    else
+    {
+        Page.Title = "Add itinerary item to trip " + tripName;
+    }
 
     // Setup validation
     Validation.RequireField("title", "You must specify an item name.");
@@ -32,12 +62,18 @@
         DateTime date = DateTime.ParseExact(dateString, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
 
         // If a start time was specified, convert the time string into a datetime
-        DateTime? startTime = startTimeString.Length > 0 ? ( DateTime? )DateTime.ParseExact(startTimeString, "H:m",
-            System.Globalization.CultureInfo.InvariantCulture) : null;
+        DateTime? startTime = null;
+        if ( startTimeString.Length > 0 )
+        {
+            startTime = date.Date.Add(TimeSpan.Parse(startTimeString, System.Globalization.CultureInfo.InvariantCulture));
+        }
 
         // If an end time was specified, convert the time string into a datetime
-        DateTime? endTime = endTimeString.Length > 0 ? ( DateTime? )DateTime.ParseExact(endTimeString, "H:m",
-            System.Globalization.CultureInfo.InvariantCulture) : null;
+        DateTime? endTime = null;
+        if ( endTimeString.Length > 0 )
+        {
+            endTime = date.Date.Add(TimeSpan.Parse(endTimeString, System.Globalization.CultureInfo.InvariantCulture));
+        }
 
         // Check for 'action' values first
         if ( Request["action"] == "Add item" )
@@ -60,6 +96,27 @@
                 Response.Redirect(Href("~/Trips/Itinerary", tripId));
             }
         }
+        else if ( Request["action"] == "Update item" )
+        {
+            if ( Validation.IsValid() == true )
+            {
+                // Update the existing itinerary item
+                itemToEdit.Title = title;
+                itemToEdit.Date = date;
+                itemToEdit.Time = startTime;
+                itemToEdit.EndTime = endTime;
+                itemToEdit.Details = details;
+                model.SaveChanges();
+                Response.Redirect(Href("~/Trips/Itinerary", tripId));
+            }
+        }
+        else if ( Request["action"] == "Delete item" )
+        {
+            // Delete the existing itinerary item
+            model.ItineraryItems.Remove(itemToEdit);
+            model.SaveChanges();
+            Response.Redirect(Href("~/Trips/Itinerary", tripId));
+        }
     }
 }
 
@@ -79,7 +136,7 @@
             </hgroup>
             @if ( WebSecurity.IsAuthenticated == true )
             {
-                <p>Use the form below to add a new itinerary to the trip</p>
+                <p>Use the form below to add a new itinerary to the trip, or to edit an existing item</p>
             }
             else
             {
@@ -128,8 +185,18 @@
                     </div>
                 </li>
             </ol>
-            <input type="submit" name="action" value="Add item" id="submit" />
+            @if ( itemToEdit == null )
+            {
+                <input type="submit" name="action" value="Add item" id="submit" />
+            }
+            else
+            {
+                <input type="submit" name="action" value="Update item" id="submit" />
+                <input type="submit" name="action" value="Delete item" id="submit"
+                       onclick="return confirm('Are you sure you want to delete this item?');" />
+            }
             <a href="@Href("~/Trips/Itinerary", tripId)" class="btn">Cancel</a>
+
         </fieldset>
     </form>
 }

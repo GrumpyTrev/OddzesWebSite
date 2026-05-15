@@ -139,7 +139,7 @@
 
     if ( open == true )
     {
-        <a href="@Href("~/Trips/ItineraryItem", item.Id)" style="padding:0px;"><strong>@titleString</strong></a>
+        <a href="@Href("~/Trips/AddItineraryItem", item.TripId, item.Id)" style="padding:0px;"><strong>@titleString</strong></a>
     }
     else
     {
@@ -148,7 +148,7 @@
     
     if ( item.Details.IsEmpty() == false )
     {
-        <br /><span>@item.Details</span>
+        <br /><span style="white-space:pre-wrap">@item.Details</span>
     }
 }
 

@@ -195,8 +195,10 @@
                                             </a>
                                         </summary>
                                         <div style="margin-left: 14px;">
-                                            @HtmlHelpers.DisplayItinerary(model.ItineraryItems.
-                                                Where(item => item.TripId == trip.Id).OrderBy(item => item.Date), false )
+                                            @HtmlHelpers.DisplayItinerary(model.ItineraryItems
+                                                .Where(item => item.TripId == trip.Id)
+                                                .OrderBy(item => item.Date)
+                                                .ThenBy( item => item.Time), false )
                                         </div>
                                     </details>
                                 </td>

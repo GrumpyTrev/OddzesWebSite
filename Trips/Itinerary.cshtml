@@ -45,7 +45,7 @@
 {
     // Get the itinerary items for this trip.
     List<ItineraryItem> itineraryItems = model.ItineraryItems.Where(item => ( item.TripId == tripId ) )
-        .OrderBy(item => item.Date).ToList();
+        .OrderBy(item => item.Date).ThenBy(item => item.Time).ToList();
 
     if ( itineraryItems.Count > 0 )
     {
@@ -57,6 +57,6 @@
 
     if ( tripToDisplay.Open == true )
     {
-        <a href="@Href("~/Trips/AddItineraryItem", tripId)" class="btn">Add item</a>
+        <a href="@Href("~/Trips/AddItineraryItem", tripId, 0)" class="btn">Add item</a>
     }
 }
