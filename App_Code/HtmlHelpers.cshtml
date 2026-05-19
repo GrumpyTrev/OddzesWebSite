@@ -55,7 +55,7 @@
         // Keep track of which day is being displayed
         string dateString = "";
 
-        <table style="margin-top:0px">
+        <table style="margin-top: 0px; font-size: 1.1em">
             @foreach ( Transaction trans in transactions )
             {
                 string thisDateString = trans.Date.ToString("d MMM yyyy");
@@ -89,7 +89,7 @@
 
 @helper DisplayExpenses(IEnumerable<UserExpense> expenses, int currencyId, Trip associatedTrip, bool open)
 {
-    <table style="margin-top:0px">
+    <table style="margin-top: 0px; font-size: 1.1em">
         @foreach ( UserExpense userExpense in expenses )
         {
             <tr>
@@ -162,7 +162,7 @@
     {
         // Keep track of which day is being displayed
         string dateString = "";
-        <table style="margin-top:0px">
+        <table style="margin-top:0px; font-size:1.1em">
             @foreach ( ItineraryItem item in items )
             {
                 string thisDateString = item.Date.ToString("dddd dd MMM yyyy");

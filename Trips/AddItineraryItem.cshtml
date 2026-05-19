@@ -156,7 +156,7 @@
             <ol>
                 <li>
                     <label for="title">Title</label>
-                    <input style="width:auto" type="text" id="title" name="title" value="@title" @Validation.For("title") />
+                    <input style="width:93%" type="text" id="title" name="title" value="@title" @Validation.For("title") />
                     @Html.ValidationMessage("title")
                 </li>
                 <li>
@@ -168,21 +168,15 @@
                 </li>
                 <li>
                     <div class="flex-input">
-                        <label for="startTime">Time</label>
+                        <label for="startTime">Start Time</label>
                         <input style="width:auto" type="time" id="time" name="startTime" value="@startTimeString" />
-                    </div>
-                </li>
-                <li>
-                    <div class="flex-input">
-                        <label for="endTime">End Time</label>
+                         <label for="endTime">End Time</label>
                         <input style="width:auto" type="time" id="time" name="endTime" value="@endTimeString" />
-                    </div>
+                   </div>
                 </li>
                 <li>
-                    <div class="flex-input">
-                        <label for="details">Details</label>
-                        <textarea style="width:auto" id="details" name="details">@details</textarea>
-                    </div>
+                    <label for="details">Details</label>
+                    <textarea style="width:93%; height:145px" id="details" name="details">@details</textarea>
                 </li>
             </ol>
             @if ( itemToEdit == null )
