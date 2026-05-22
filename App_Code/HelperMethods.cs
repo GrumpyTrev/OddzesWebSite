@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Security;
@@ -188,5 +189,29 @@ public class HelperMethods
         }
 
         return convertedAmount;
+    }
+
+    /// <summary>
+    /// Return a string representation of the day of the month with an ordinal suffix, followed by the month name 
+    /// (e.g. "1st January", "2nd February", "3rd March", "4th April" etc.)
+    /// </summary>
+    /// <param name="date"></param>
+    /// <returns></returns>
+    static public string DayOrdinalMonth( DateTime date )
+    {
+        string daySuffix = "th";
+        if ( date.Day % 10 == 1 && date.Day != 11 )
+        {
+            daySuffix = "st";
+        }
+        else if ( date.Day % 10 == 2 && date.Day != 12 )
+        {
+            daySuffix = "nd";
+        }
+        else if ( date.Day % 10 == 3 && date.Day != 13 )
+        {
+            daySuffix = "rd";
+        }
+        return string.Format("{0}{1} {2}", date.Day, daySuffix, date.ToString("MMMM"));
     }
 }

@@ -17,8 +17,57 @@
 
     Page.Title = expenseRecord == null ? "Current expenses" : string.Format("{0} expenses", expenseRecord.Title);
 
+    // Get the transactions for this trip, and associated with the specified expense record
+    List<Transaction> tripTransactions = model.Transactions
+        .Where(trans => ( trans.TripId == tripToDisplay.Id ) && ( trans.ExpensesId == expensesRecordId ))
+        .OrderByDescending(trans => trans.Date).ThenByDescending(trans => trans.Id).ToList();
+
     if ( IsPost == true )
     {
+        // Is this a request to close the current expenses (i.e. move the current transactions to a new expense record and mark
+        // that record as closed), or to re-open a closed expense record?
+        if ( Request["action"] == "Close expenses" )
+        {
+            // Add an ExpenseRecord for the current set of expenses
+            // Determine the name from the dates of the transactions, i.e 25th May to 24th June
+            DateTime endDate = tripTransactions.First().Date;
+            DateTime startDate = tripTransactions.Last().Date;
+
+            ExpenseRecord newExpenseRecord = model.ExpenseRecords.Add(new ExpenseRecord
+            {
+                TripId = tripToDisplay.Id,
+                Title = ( startDate == endDate ) ? HelperMethods.DayOrdinalMonth(startDate) :
+                    string.Format("{0} to {1}", HelperMethods.DayOrdinalMonth(startDate), HelperMethods.DayOrdinalMonth(endDate)),
+                Open = false
+            });
+            model.SaveChanges();
+
+            // Set the ExpensesId for all the transactions to the id of the new ExpenseRecord
+            foreach ( Transaction transaction in tripTransactions )
+            {
+                transaction.ExpensesId = newExpenseRecord.Id;
+            }
+            model.SaveChanges();
+
+            // Return to the Trips page
+            Response.Redirect("~/Trips");
+        }
+        else if ( Request["action"] == "Re-open expenses" )
+        {
+            // Set the ExpensesId for all the transactions to 0 so that they are included in the current expenses
+            foreach ( Transaction transaction in tripTransactions )
+            {
+                transaction.ExpensesId = 0;
+            }
+
+            // Delete the expense record as it is no longer required
+            model.ExpenseRecords.Remove(expenseRecord);
+            model.SaveChanges();
+
+            // Return to the Trips page
+            Response.Redirect("~/Trips");
+        }
+        else
         // Has there been a change to the selected currency
         if ( string.IsNullOrEmpty(Request["currency"]) == false )
         {
@@ -36,20 +85,20 @@
             @if ( WebSecurity.IsAuthenticated == true )
             {
                 if ( expensesRecordId == 0 )
-                { 
-                   <p>@string.Format("These are the current expenses for trip {0}", tripToDisplay.Name)</p>
+                {
+                    <p>@string.Format("These are the current expenses for trip {0}", tripToDisplay.Name)</p>
                 }
                 else
-                { 
+                {
                     <p>@string.Format("These are historical expenses for trip {0}", tripToDisplay.Name)</p>
                 }
 
                 if ( tripToDisplay.Open == false )
                 {
-                    <p>This trip is closed.New transactions cannot be added or existing transactions updated.</p>
+                    <p>This trip is closed. New transactions cannot be added or existing transactions updated.</p>
                 }
 
-                if ( model.Transactions.Any(trans => ( trans.TripId == tripToDisplay.Id ) && ( trans.ExpensesId == 0 ) ) == false )
+                if ( model.Transactions.Any(trans => ( trans.TripId == tripToDisplay.Id ) && ( trans.ExpensesId == 0 )) == false )
                 {
                     <p>There are currently no expenses for this trip</p>
                 }
@@ -74,10 +123,10 @@
     // Get the selected currency id
     int currencyId = model.Currencies.Single(cur => cur.Name == expensesCurrency).Id;
 
-    // Get the transactions for this trip, and associated with the specified expense record
-    List<Transaction> tripTransactions = model.Transactions
-        .Where(trans => ( trans.TripId == tripToDisplay.Id) && ( trans.ExpensesId == expensesRecordId) )
-        .OrderByDescending(trans => trans.Date).ThenByDescending(trans => trans.Id).ToList();
+
+
+    // And the expenses for this trip and expense record (this calculates the totals for the trip and for each user)
+    Expenses expenses = Expenses.GetExpensesForTrip(tripId, currencyId, expensesRecordId);
 
     if ( tripTransactions.Count > 0 )
     {
@@ -85,13 +134,10 @@
         // If the transaction is in the selected currency then use the amount in the transaction.
         // If the selected currency is sterling then use the sterling amounts in the transaction
         // Otherwise two convertions are required -  from transaction amount to sterling and from sterling to selected currency
-
-        Expenses expenses = Expenses.GetExpensesForTrip(tripId, currencyId, expensesRecordId);
-
         <form id="tripForm" method="post">
             <input type="hidden" id="currency" name="currency" value="" />
 
-            <table>
+            <table style="font-size: 1.2em">
                 <tr>
                     <td><strong>Total</strong></td>
                     <td>@HelperMethods.AmountString(expenses.TotalExpenses, currencyId)</td>
@@ -105,15 +151,46 @@
                     </td>
                 </tr>
             </table>
-            @HtmlHelpers.DisplayExpenses( expenses.UserExpenses, currencyId, tripToDisplay, 
-                ( tripToDisplay.Open == true ) && ( expensesRecordId == 0 ) )
-            @HtmlHelpers.DisplayTransactions(tripTransactions,  ( tripToDisplay.Open == false ) || ( expensesRecordId != 0 ))
+            @HtmlHelpers.DisplayExpenses(expenses.UserExpenses, currencyId, tripToDisplay,
+                ( tripToDisplay.Open == true ) && ( expensesRecordId == 0 ))
+            @HtmlHelpers.DisplayTransactions(tripTransactions, ( tripToDisplay.Open == false ) || ( expensesRecordId != 0 ))
         </form>
     }
     <p></p>
 
     if ( tripToDisplay.Open == true )
     {
-        <a href="@Href("~/Trips/AddTransaction", tripId)" class="btn">Add transaction</a>
+        <div style="display:flex">
+            @{
+                // Only allow new transactions to be added, or these expenses to be closed,  if this is the current set of expenses,
+                // i.e. not historical
+                if ( expensesRecordId == 0 )
+                {
+                    <a href="@Href("~/Trips/AddTransaction", tripId)" class="btn" style="margin-right:8px">Add transaction</a>
+
+                    // Expenses can be closed with balances outstanding, but check that the user is sure they want to do this
+                    if ( expenses.UserExpenses.Any(ue => ue.Payments.Count > 0) )
+                    {
+                        <form method="post">
+                            <input type="submit" name="action" value="Close expenses" id="submit"
+                                   onclick="return confirm( 'There are still outstanding balances for this set of expenses. Are you sure you want to close these expenses?');">
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post">
+                            <input type="submit" name="action" value="Close expenses" id="submit">
+                        </form>
+                    }
+                }
+                else
+                {
+                    // These are historical expenses, allow them to be re-opened if they are currently closed
+                    <form method="post">
+                        <input type="submit" name="action" value="Re-open expenses" id="submit">
+                    </form>
+                }
+            }
+        </div>
     }
 }

@@ -41,6 +41,20 @@
     </section>
 }
 
+<script type="text/javascript">
+		window.onload = function () {
+			if ( sessionStorage.scrollPosition != "undefined" )
+			{
+				window.scroll( 0, sessionStorage.scrollPosition );
+			}
+
+			window.onscroll = function()
+			{
+				sessionStorage.setItem('scrollPosition', pageYOffset);
+			}
+		};
+</script>
+
 @if ( WebSecurity.IsAuthenticated == true )
 {
     // Get the itinerary items for this trip.
