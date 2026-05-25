@@ -59,7 +59,7 @@
 {
     // Get the itinerary items for this trip.
     List<ItineraryItem> itineraryItems = model.ItineraryItems.Where(item => ( item.TripId == tripId ) )
-        .OrderBy(item => item.Date).ThenBy(item => item.Time).ToList();
+        .OrderBy(item => item.Date).ThenBy(item => item.ItemIndex).ToList();
 
     if ( itineraryItems.Count > 0 )
     {

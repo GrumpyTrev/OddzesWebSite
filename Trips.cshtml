@@ -82,6 +82,52 @@
 {
     if ( model.Trips.Any() == true )
     {
+        // This is a one-off bit of code to fill the index field in itinerary items. This is used to order the itinerary items for display.
+        // Once this has been run once and the database updated, this code can be removed.
+        foreach ( Trip trip in model.Trips )
+        {
+            DateTime itemDate = DateTime.MinValue;
+            List<ItineraryItem> itemsInSameDay = new List<ItineraryItem>();
+
+            foreach ( ItineraryItem item in model.ItineraryItems.Where(item => item.TripId == trip.Id)
+                .OrderBy(item => item.Date).ThenBy(item => item.Time).ThenBy(item => item.Id) )
+            {
+                // Has the date changed, If so then reorder the items already collected for the previous date
+                if ( item.Date != itemDate )
+                {
+                    itemDate = item.Date;
+
+                    // Reorder the items for the previous date
+                    if ( itemsInSameDay.Count > 0 )
+                    {
+                        int index = 0;
+                        foreach ( ItineraryItem itemToUpdate in itemsInSameDay )
+                        {
+                            itemToUpdate.ItemIndex = index++;
+                        }
+                    }
+
+                    // Clear the list of items for the current date
+                    itemsInSameDay.Clear();
+                }
+
+                // Add this item to the list of items for the current date
+                itemsInSameDay.Add(item);
+            }
+
+            // Reorder the items for the last date
+            if ( itemsInSameDay.Count > 0 )
+            {
+                int index = 0;
+                foreach ( ItineraryItem itemToUpdate in itemsInSameDay )
+                {
+                    itemToUpdate.ItemIndex = index++;
+                }
+            }
+
+            model.SaveChanges();
+        }
+
         <form id="tripsForm" method="post">
 
             <input type="hidden" id="deleteTripId" name="deleteTripId" value="" />
@@ -120,7 +166,8 @@
                             <tr>
                                 <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.25em">Expenses
+                                        <summary style="font-size:1.25em">
+                                            Expenses
                                             <a href="@Href("~/Trips/Expenses", trip.Id, 0)" class="btn" style="height:24px; padding:0px">
                                                 <i class='material-icons'>open_in_new</i>
                                             </a>
@@ -136,8 +183,9 @@
                                                     // Display the expense record name with an open button, followed by
                                                     // the transactions
                                                     <details>
-                                                        <summary>@record.Title [closed]
-                                                            <a href="@Href("~/Trips/Expenses", trip.Id, record.Id)" 
+                                                        <summary>
+                                                            @record.Title [closed]
+                                                            <a href="@Href("~/Trips/Expenses", trip.Id, record.Id)"
                                                                class="btn" style="height:24px; padding:0px">
                                                                 <i class='material-icons'>open_in_new</i>
                                                             </a>
@@ -170,16 +218,17 @@
                             <tr>
                                 <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.25em">Balance
-                                            <a href="@Href("~/Trips/Expenses", trip.Id, 0)" 
+                                        <summary style="font-size:1.25em">
+                                            Balance
+                                            <a href="@Href("~/Trips/Expenses", trip.Id, 0)"
                                                class="btn" style="height:24px; padding:0px">
                                                 <i class='material-icons'>open_in_new</i>
                                             </a>
                                         </summary>
                                         <div style="margin-left: 14px;">
-                                            @HtmlHelpers.DisplayExpenses( 
-                                                Expenses.GetExpensesForTrip(trip.Id, HelperMethods.SterlingId(), 0).UserExpenses, 
-                                                HelperMethods.SterlingId(), 
+                                            @HtmlHelpers.DisplayExpenses(
+                                                Expenses.GetExpensesForTrip(trip.Id, HelperMethods.SterlingId(), 0).UserExpenses,
+                                                HelperMethods.SterlingId(),
                                                 trip, false)
                                         </div>
                                     </details>
@@ -188,9 +237,10 @@
                             <tr>
                                 <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.25em">Itinerary
-                                            <a href="@Href("~/Trips/Itinerary", trip.Id)" 
-                                                class="btn" style="height:24px; padding:0px">
+                                        <summary style="font-size:1.25em">
+                                            Itinerary
+                                            <a href="@Href("~/Trips/Itinerary", trip.Id)"
+                                               class="btn" style="height:24px; padding:0px">
                                                 <i class='material-icons'>open_in_new</i>
                                             </a>
                                         </summary>
@@ -198,7 +248,7 @@
                                             @HtmlHelpers.DisplayItinerary(model.ItineraryItems
                                                 .Where(item => item.TripId == trip.Id)
                                                 .OrderBy(item => item.Date)
-                                                .ThenBy( item => item.Time), false )
+                                                .ThenBy(item => item.ItemIndex), false)
                                         </div>
                                     </details>
                                 </td>
