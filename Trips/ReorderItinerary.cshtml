@@ -1,0 +1,128 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // Get the passed in trip id and date
+    int tripId = UrlData[0].AsInt();
+
+    string dateString = UrlData[1];
+
+    // Convert this string to a date. The format is "ddMMyyyy".
+    DateTime date = DateTime.ParseExact(dateString, "ddMMyyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+    Trip tripToDisplay = model.Trips.SingleOrDefault(trip => trip.Id == tripId);
+
+    // Get the itinerary items for this trip and the specified date.
+    List<ItineraryItem> itineraryItems = model.ItineraryItems.Where(item => ( item.TripId == tripId ) && ( item.Date == date ))
+        .OrderBy(item => item.ItemIndex).ToList();
+
+    Page.Title = "Reorder itinerary items";
+
+    if ( IsPost == true )
+    {
+        if ( Validation.IsValid() == true )
+        {
+            // Look for a trip to delete
+            if ( string.IsNullOrEmpty(Request["itemIndex"]) == false )
+            {
+                int itemIndex = Request["itemIndex"].AsInt();
+                bool itemUp = Request["itemUp"].AsBool();
+                
+                // Change the indexes, save the model and then get the items again
+                if ( itemUp == true)
+                {
+                    itineraryItems[itemIndex - 1].ItemIndex = itemIndex;
+                    itineraryItems[itemIndex].ItemIndex = itemIndex - 1;
+                }
+                else
+                {
+                    itineraryItems[itemIndex + 1].ItemIndex = itemIndex;
+                    itineraryItems[itemIndex].ItemIndex = itemIndex + 1;
+                }
+
+                model.SaveChanges();
+                itineraryItems = model.ItineraryItems.Where(item => ( item.TripId == tripId ) && ( item.Date == date ))
+                    .OrderBy(item => item.ItemIndex).ToList();
+            }
+        }
+    }
+}
+
+<script type="text/javascript">
+    function itemUp(itemIndex) {
+        document.getElementById('itemIndex').value = itemIndex;
+        document.getElementById('itemUp').value = true;
+        document.getElementById('itemOrder').submit();
+    }
+
+    function itemDown(itemIndex) {
+        document.getElementById('itemIndex').value = itemIndex;
+        document.getElementById('itemUp').value = false;
+        document.getElementById('itemOrder').submit();
+    }
+
+</script>
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>@string.Format("These are the items for {0} in trip {1}", date.ToString("dddd dd MMM yyyy"), tripToDisplay.Name)</p>
+            }
+            else
+            {
+                <p>Please login to change the order of items in this itinerary</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    if ( itineraryItems.Count > 0 )
+    {
+        <table style="margin-top:0px; font-size:1.2em">
+            @foreach ( ItineraryItem item in itineraryItems )
+            {
+                <tr>
+                    @if ( item.ItemIndex < ( itineraryItems.Count - 1 ) )
+                    {
+                        <td class="tdNoPad">
+                            <button class="btn" style="height:24px; padding:0px"
+                                    type="button" onclick="@string.Format("itemDown( {0} );", item.ItemIndex )" >
+                               <i class='material-icons'>arrow_downward</i>
+                            </button>
+                        </td>
+                    }
+                    else
+                    {
+                        <td class="tdNoPad"></td>
+                    }
+                    <td class="tdNoPadWrap" style="padding-left:10px;padding-bottom:3px">@HtmlHelpers.DisplayItineraryItem(item, false)</td>
+                    @if ( item.ItemIndex > 0 )
+                    {
+                        <td class="tdNoPad">
+                            <button class="btn" style="height:24px; padding:0px"
+                                    type="button" onclick="@string.Format("itemUp( {0} );", item.ItemIndex )" >
+                                <i class='material-icons'>arrow_upward</i>
+                            </button>
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+
+        <p></p>
+        <a href="@Href("~/Trips/Itinerary", tripId)" class="btn">Done</a>
+
+        <form id="itemOrder" method="post">
+            <input type="hidden" id="itemIndex" name="itemIndex" value="" />
+            <input type="hidden" id="itemUp" name="itemUp" value="" />
+        </form>
+    }
+}

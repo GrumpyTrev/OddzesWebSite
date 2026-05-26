@@ -161,17 +161,36 @@
     else
     {
         // Keep track of which day is being displayed
-        string dateString = "";
+        DateTime dayDisplayed = DateTime.MinValue;
+
         <table style="margin-top:0px; font-size:1.2em">
             @foreach ( ItineraryItem item in items )
             {
-                string thisDateString = item.Date.ToString("dddd dd MMM yyyy");
-
                 // Already displaying itinerary items for this day for this month?
-                if ( dateString != thisDateString )
+                if ( dayDisplayed != item.Date )
                 {
-                    dateString = thisDateString;
-                    <tr><td><strong style="font-size:1.5em">@dateString</strong></td></tr>
+                    dayDisplayed = item.Date;
+
+                    // How many items are there for this day?
+                    int itemsForThisDay = items.Count(i => i.Date == dayDisplayed);
+
+                    // If there is more than one item then display the reorder button
+                    if ( ( itemsForThisDay > 1 ) && ( open == true ) ) 
+                    {
+                        <tr>
+                            <td>
+                                <strong style="font-size:1.5em">@dayDisplayed.ToString("dddd dd MMM yyyy")</strong>
+                                <a href="@Href("~/Trips/ReorderItinerary", item.TripId, dayDisplayed.ToString("ddMMyyyy"))" class="btn"
+                                   style="height:24px; padding:0px">
+                                    <i class='material-icons'>swap_vert</i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr><td><strong style="font-size:1.5em">@dayDisplayed.ToString("dddd dd MMM yyyy")</strong></td></tr>
+                    }
                 }
                 <tr>
                     <td class="tdNoPadWrap" style="padding-left:10px;padding-bottom:3px">@DisplayItineraryItem(item, open)</td>
