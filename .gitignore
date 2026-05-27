@@ -245,3 +245,5 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/App_Data/itinerary.txt
+/App_Data/itinerary.html

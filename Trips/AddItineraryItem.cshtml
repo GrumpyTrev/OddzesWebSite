@@ -18,7 +18,6 @@
     string dateString = DateTime.Now.ToString("dd/MM/yyyy");
     string startTimeString = "";
     string endTimeString = "";
-    int itemIndex = 0;
     string details = "";
 
     // If an itinerary item id was specified, this page is being used to update an existing item,
@@ -80,6 +79,11 @@
         {
             if ( Validation.IsValid() == true )
             {
+                // Determine the index for the new item. This is one more than the current maximum index for items on the same date
+                // for this trip
+                int maxIndexForDate = model.ItineraryItems.Where(item => ( item.TripId == tripId ) && ( item.Date == date ))
+                    .Select(item => item.ItemIndex).DefaultIfEmpty(0).Max();
+
                 // Add a new itinerary item to the trip
                 model.ItineraryItems.Add(new ItineraryItem
                 {
@@ -89,6 +93,7 @@
                     Time = startTime,
                     EndTime = endTime,
                     Details = details,
+                    ItemIndex = maxIndexForDate + 1
                 });
 
                 model.SaveChanges();
@@ -170,9 +175,9 @@
                     <div class="flex-input">
                         <label for="startTime">Start Time</label>
                         <input style="width:auto" type="time" id="time" name="startTime" value="@startTimeString" />
-                         <label for="endTime">End Time</label>
+                        <label for="endTime">End Time</label>
                         <input style="width:auto" type="time" id="time" name="endTime" value="@endTimeString" />
-                   </div>
+                    </div>
                 </li>
                 <li>
                     <label for="details">Details</label>

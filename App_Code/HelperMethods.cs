@@ -1,37 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
+using System.Text;
 using System.Web.Security;
 using WebMatrix.WebData;
 
 public class HelperMethods
 {
-    /// <summary>
-    /// String representation of all the participants in a trip
-    /// </summary>
-    /// <param name="tripId"></param>
-    /// <returns></returns>
-    static public string TripParticipantsString(int tripId)
-    {
-        string text = "";
-
-        List<string> userNames = TripParticipants(tripId);
-
-        if ( userNames.Count > 0 )
-        {
-            if ( userNames.Count == 1 )
-            {
-                text = userNames[0];
-            }
-            else
-            {
-                text = string.Join(", ", userNames.Take(userNames.Count - 1)) + " & " + userNames.Last();
-            }
-        }
-
-        return text;
-    }
-
     /// <summary>
     /// Determine all the participants associated with a trip 
     /// </summary>
@@ -212,6 +188,68 @@ public class HelperMethods
         {
             daySuffix = "rd";
         }
+
         return string.Format("{0}{1} {2}", date.Day, daySuffix, date.ToString("MMMM"));
+    }
+
+    /// <summary>
+    /// Return a string representation of the itinerary for a trip, with the trip name as a heading
+    /// </summary>
+    /// <param name="tripId"></param>
+    /// <returns></returns>
+    static public string ItineraryAsString( int tripId )
+    {
+        StarterSiteEntities model = new StarterSiteEntities();
+
+        // Get the trip for the heading and the itinerary items for the body of the string
+        Trip theTrip = model.Trips.Single(trip => trip.Id == tripId);
+        IEnumerable<ItineraryItem> itineraryItems = model.ItineraryItems.Where(item => item.TripId == tripId)
+            .OrderBy(item => item.Date).ThenBy(item => item.ItemIndex );
+
+        StringBuilder builder = new StringBuilder();
+
+        // Add the trip name as a heading
+        builder.AppendLine(theTrip.Name).AppendLine(new string('=', theTrip.Name.Length)).AppendLine();
+
+        // Output the rest of the itinerary with headings for each day
+
+        // Keep track of which day is being displayed
+        DateTime dayDisplayed = DateTime.MinValue;
+
+        foreach ( ItineraryItem item in itineraryItems )
+        {
+            // Already displaying itinerary items for this day for this month?
+            if ( dayDisplayed != item.Date )
+            {
+                dayDisplayed = item.Date;
+                string dayString = dayDisplayed.ToString("dddd dd MMM yyyy");
+                builder.AppendLine(dayString).AppendLine(new string('=', dayString.Length));
+            }
+
+            // Output the title for this item
+            string titleString = "";
+
+            if ( item.Time != null )
+            {
+                titleString = item.Time.Value.ToString("HH:mm") + ' ';
+
+                if ( item.EndTime != null )
+                {
+                    titleString += string.Format("- {0} ", item.EndTime.Value.ToString("HH:mm"));
+                }
+            }
+
+            titleString += item.Title;
+            builder.AppendLine(titleString).AppendLine(new string('-', titleString.Length));
+
+            if ( string.IsNullOrEmpty( item.Details ) == false )
+            {
+                builder.AppendLine(item.Details);
+            }
+
+            builder.AppendLine();
+        }
+
+        return builder.ToString();
     }
 }
