@@ -1,0 +1,83 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int tripId = UrlData[0].AsInt();
+
+    Trip tripToDisplay = model.Trips.SingleOrDefault(trip => trip.Id == tripId);
+
+    Page.Title = "Add Activity";
+
+    // Initialise general page variables
+    string title = "";
+
+    // Setup validation
+    Validation.RequireField("title", "You must specify an activity name.");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        // Update the general page variables with the posted values.
+        // Do this before validation so that if there is a validation error the form fields will be populated with the
+        // posted values instead of the defaults
+        title = Request.Form["title"];
+
+        if ( Validation.IsValid() == true )
+        {
+            // Make sure that an activity with the same name does not exist in the trip
+            if ( model.Activities.Where(act => ( act.TripId == tripId ) && ( act.Title == title) ).Any() == true )
+            {
+                ModelState.AddFormError("An activity with that name already exists for the trip");
+            }
+            else
+            {
+                // Add a new activity and return to the activities page for this trip
+                model.Activities.Add(new Activity { Title = title, TripId = tripId, 
+                    Index = model.Activities.Where(act => ( act.TripId == tripId ) ).Count() });
+
+                // Save changes
+                model.SaveChanges();
+
+                Response.Redirect(Href("~/Trips/Activities", tripId));
+            }
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>Use the form below to add a new activity.</p>
+            }
+            else
+            {
+                <p>Please login to add a new actvity</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form method="post">
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Add new actity</legend>
+            <div class="flex-input">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" value="@title" @Validation.For("title") />
+            </div>
+            @Html.ValidationMessage("title")
+
+            <input type="submit" value="Add activity" id="submit" />
+            <a href="@Href("~/Trips/Activities", tripId)" class="btn">Cancel</a>
+        </fieldset>
+    </form>
+}

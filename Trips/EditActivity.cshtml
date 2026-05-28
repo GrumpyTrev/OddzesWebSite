@@ -1,0 +1,84 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int activityId = UrlData[0].AsInt();
+    Activity activityToEdit = model.Activities.SingleOrDefault(act => act.Id == activityId);
+
+    Page.Title = "Edit activity " + activityToEdit.Title;
+
+    // Initialise general page variables
+    string title = activityToEdit.Title;
+
+    // Setup validation
+    Validation.RequireField("title", "Activity title cannot be empty");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        // Update the general page variables with the posted values.
+        // Do this before validation so that if there is a validation error the form fields will be populated with the
+        // posted values instead of the defaults
+        title = Request.Form["title"];
+
+        if ( Validation.IsValid() == true )
+        {
+            // Make sure that an activity with the same name does not already exist for the trip ( ignoring this activity of course )
+            if ( model.Activities.Any(act => ( act.Title == title ) && ( act.TripId == activityToEdit.TripId ) && ( act.Id != activityToEdit.Id )) )
+            {
+                ModelState.AddFormError("An activity with this title already exists inthe trip");
+            }
+            else
+            {
+                // Replace the existing entry with the edited values
+                activityToEdit.Title = title;
+
+                model.SaveChanges();
+
+                Response.Redirect(Href("~/Trips/Activities", activityToEdit.TripId));
+            }
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>Use the form below to change the title an activity.</p>
+            }
+            else
+            {
+                <p> Please login to edit this activity.</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form method="post">
+        @* If one or more validation errors exist, show an error *@
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Edit activity</legend>
+            <ol>
+                <li>
+                    <div class="flex-input">
+                        <label for="title">Name</label>
+                        <input type="text" id="title" name="title" value="@title" @Validation.For("title") />
+                        @* Write any validation errors to the page *@
+                        @Html.ValidationMessage("title")
+                    </div>
+                </li>
+            </ol>
+            <input type="submit" value="Update activity" id="submit" />
+            <a href="@Href("~/Trips/Activities", activityToEdit.TripId)" class="btn">Cancel</a>
+        </fieldset>
+    </form>
+}

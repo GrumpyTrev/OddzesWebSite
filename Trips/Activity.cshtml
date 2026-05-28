@@ -1,0 +1,70 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int activityId = UrlData[0].AsInt();
+
+    Activity activityToDisplay = model.Activities.SingleOrDefault(act => act.Id == activityId);
+    Trip tripToDisplay = model.Trips.SingleOrDefault(trip => trip.Id == activityToDisplay.TripId);
+
+    Page.Title = "Activity";
+
+    if ( IsPost == true )
+    {
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>@string.Format("These are the items associated with activity {0} for trip {1}", activityToDisplay.Title, tripToDisplay.Name)</p>
+
+                if ( tripToDisplay.Open == false )
+                {
+                    <p>The trip is closed. New activities cannot be added or existing activities updated.</p>
+                }
+                else if ( model.ActivityItems.Any(item => item.ActivityId == activityId) == false )
+                {
+                    <p>There are currently no items for this activity. Use the button below to add a new item</p>
+                }
+            }
+            else
+            {
+                <p>Please login to display the items in this activity</p>
+            }
+        </div>
+    </section>
+}
+
+<script type="text/javascript">
+    window.onload = function () {
+        if (sessionStorage.scrollPosition != "undefined") {
+            window.scroll(0, sessionStorage.scrollPosition);
+        }
+
+        window.onscroll = function () {
+            sessionStorage.setItem('scrollPosition', pageYOffset);
+        }
+    };
+</script>
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    // Get the items for this activity.
+    List<ActivityItem> items = model.ActivityItems.Where(item => ( item.ActivityId == activityId )).ToList();
+
+    @HtmlHelpers.DisplayActivity(items, activityToDisplay.TripId, tripToDisplay.Open, "There are no items for this activity");
+
+    <p></p>
+
+    if ( tripToDisplay.Open == true )
+    {
+        <a href="@Href("~/Trips/AddActivityItem", activityId, 0)" class="btn">Add activity item</a>
+    }
+}

@@ -1,0 +1,105 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    int tripId = UrlData[0].AsInt();
+
+    Trip tripToDisplay = model.Trips.SingleOrDefault(trip => trip.Id == tripId);
+
+    Page.Title = "Activities";
+
+    if ( IsPost == true )
+    {
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>@string.Format("These are the activities for trip {0}", tripToDisplay.Name)</p>
+
+                if ( tripToDisplay.Open == false )
+                {
+                    <p>This trip is closed. New activities cannot be added or existing activities updated.</p>
+                }
+                else if ( model.Activities.Any(item => item.TripId == tripToDisplay.Id) == false )
+                {
+                    <p>There are currently no activities for this trip. Use the button below to add new activity</p>
+                }
+            }
+            else
+            {
+                <p>Please login to display the activities for this trip</p>
+            }
+        </div>
+    </section>
+}
+
+<script type="text/javascript">
+		window.onload = function () {
+			if ( sessionStorage.scrollPosition != "undefined" )
+			{
+				window.scroll( 0, sessionStorage.scrollPosition );
+			}
+
+			window.onscroll = function()
+			{
+				sessionStorage.setItem('scrollPosition', pageYOffset);
+			}
+		};
+</script>
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    // Get the actvities for this trip.
+    List<Activity> activities = model.Activities.Where(item => ( item.TripId == tripId ) ).ToList();
+
+    if ( activities.Count > 0 )
+    {
+        <table>
+            @foreach( Activity activity in activities )
+            {
+               // Display the activity title followed by the activities items
+               <tr>
+                    <td>
+                        <details>
+                            <summary style="font-size:1.25em">
+                                @activity.Title
+                                <a href="@Href("~/Trips/Activity", activity.Id)"
+                                    class="btn" style="height:24px; padding:0px">
+                                    <i class='material-icons'>open_in_new</i>
+                                </a>
+                                @if ( tripToDisplay.Open == true )
+                                {
+                                    <a href="@Href("~/Trips/EditActivity", activity.Id)" class="btn" style="height:24px; padding:0px">
+                                        <i class='material-icons'>edit</i>
+                                    </a>
+                                }
+                           </summary>
+                            <div style="margin-left: 14px;">
+                                @{
+                                    // Display the transactions associated with this record
+                                    @HtmlHelpers.DisplayActivity(model.ActivityItems
+                                        .Where(act => ( act.ActivityId == activity.Id )), tripId, false,
+                                        "There are no items");
+                                }
+                            </div>
+                        </details>
+                    </td>
+                </tr>
+            }
+        </table>
+    }
+    <p></p>
+
+    if ( tripToDisplay.Open == true )
+    {
+        <a href="@Href("~/Trips/AddActivity", tripId)" class="btn">Add activity</a>
+    }
+}

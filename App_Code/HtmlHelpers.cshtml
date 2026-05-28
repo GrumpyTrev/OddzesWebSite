@@ -199,3 +199,41 @@
         </table>
     }
 }
+
+@helper DisplayActivityItem(ActivityItem item, int tripId, bool open)
+{
+    if ( open == true )
+    {
+        <a href="@Href("~/Trips/AddActivityItem", item.ActivityId, item.Id)" style="padding:0px;"><strong>@item.Title</strong></a>
+    }
+    else
+    {
+        <span><strong>@item.Title</strong></span>
+    }
+    
+    if ( item.Details.IsEmpty() == false )
+    {
+        <br /><span style="white-space:pre-wrap">@item.Details</span>
+    }
+}
+
+
+@helper DisplayActivity(IEnumerable<ActivityItem> items, int tripId, bool open, string noContentMessage = "")
+{
+    if ( ( noContentMessage.Length > 0 ) && ( items.Count() == 0 ) )
+    {
+        <span>@noContentMessage</span>
+    }
+    else
+    {
+        <table style="margin-top:0px; font-size:1.2em">
+            @foreach ( ActivityItem item in items )
+            {
+                <tr>
+                    <td class="tdNoPadWrap" style="padding-left:10px;padding-bottom:3px">@DisplayActivityItem(item, tripId, open)</td>
+                </tr>
+            }
+        </table>
+    }
+}
+

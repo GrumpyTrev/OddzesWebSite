@@ -1,0 +1,136 @@
+﻿@{
+    Layout = "~/Trips/_TripsLayout.cshtml";
+
+    StarterSiteEntities model = new StarterSiteEntities();
+
+    // This page can be used to update or delete an existing activity item if it is called with an activity item id,
+    // otherwise it is used to add a new activity item to the activity specified by the activity id in the url.
+    // The activity id is always the first parameter in the url, and the activity item id is the second parameter
+    // if it is being used to update an existing item.
+
+    int activityId = UrlData[0].AsInt();
+    Activity activity = model.Activities.Single(act => act.Id == activityId);
+
+    int activityItemId = UrlData[1].AsInt();
+
+    // Initialise general page variables
+    string title = "";
+    string details = "";
+
+    // If an actvity item id was specified, this page is being used to update an existing item,
+    // so populate the fields with the existing values
+    ActivityItem itemToEdit = null;
+
+    if ( activityItemId > 0 )
+    {
+        itemToEdit = model.ActivityItems.Single(item => item.Id == activityItemId);
+        title = itemToEdit.Title;
+        details = itemToEdit.Details;
+
+        Page.Title = "Edit activity item for activity " + activity.Title;
+    }
+    else
+    {
+        Page.Title = "Add activity item for activity " + activity.Title;
+    }
+
+    // Setup validation
+    Validation.RequireField("title", "You must specify an item name.");
+
+    // If this is a POST request, validate and process data
+    if ( IsPost == true )
+    {
+        title = Request.Form["title"];
+        details = Request.Form["details"];
+
+        // Check for 'action' values first
+        if ( Request["action"] == "Add item" )
+        {
+            if ( Validation.IsValid() == true )
+            {
+                // Add a new activity item to the activity
+                model.ActivityItems.Add(new ActivityItem
+                {
+                    Title = title,
+                    Details = details,
+                    ActivityId = activityId,
+                    Index = model.ActivityItems.Where(item => item.ActivityId == activityItemId).Count()
+                });
+
+                model.SaveChanges();
+
+                Response.Redirect(Href("~/Trips/Activity", activityId));
+            }
+        }
+        else if ( Request["action"] == "Update item" )
+        {
+            if ( Validation.IsValid() == true )
+            {
+                // Update the existing activity item
+                itemToEdit.Title = title;
+                itemToEdit.Details = details;
+                model.SaveChanges();
+                Response.Redirect(Href("~/Trips/Activity", activityId));
+            }
+        }
+        else if ( Request["action"] == "Delete item" )
+        {
+            // Delete the existing activity item
+            model.ActivityItems.Remove(itemToEdit);
+            model.SaveChanges();
+            Response.Redirect(Href("~/Trips/Activity", activityId));
+        }
+    }
+}
+
+@section featured {
+    <section class="featured">
+        <div class="content-wrapper">
+            <hgroup class="title">
+                <h1>@Page.Title.</h1>
+            </hgroup>
+            @if ( WebSecurity.IsAuthenticated == true )
+            {
+                <p>Use the form below to add a new activity item to the trip, or to edit an existing item</p>
+            }
+            else
+            {
+                <p>Please login to add a new activity item</p>
+            }
+        </div>
+    </section>
+}
+
+@if ( WebSecurity.IsAuthenticated == true )
+{
+    <form id="itineraryItemForm" method="post">
+        @Html.ValidationSummary("Operation was unsuccessful. Please correct the errors and try again.", excludeFieldErrors: true, htmlAttributes: null)
+
+        <fieldset>
+            <legend>Add new item</legend>
+            <ol>
+                <li>
+                    <label for="title">Title</label>
+                    <input style="width:93%" type="text" id="title" name="title" value="@title" @Validation.For("title") />
+                    @Html.ValidationMessage("title")
+                </li>
+                <li>
+                    <label for="details">Details</label>
+                    <textarea style="width:93%; height:100px" id="details" name="details">@details</textarea>
+                </li>
+            </ol>
+            @if ( itemToEdit == null )
+            {
+                <input type="submit" name="action" value="Add item" id="submit" />
+            }
+            else
+            {
+                <input type="submit" name="action" value="Update item" id="submit" />
+                <input type="submit" name="action" value="Delete item" id="submit"
+                       onclick="return confirm('Are you sure you want to delete this item?');" />
+            }
+            <a href="@Href("~/Trips/Activity", activityId)" class="btn">Cancel</a>
+
+        </fieldset>
+    </form>
+}

@@ -24,6 +24,8 @@
         <EntityTypeShape EntityType="StarterSiteModel.Transaction" Width="1.5" PointX="10.625" PointY="3.5" />
         <EntityTypeShape EntityType="StarterSiteModel.ExpenseRecord" Width="1.5" PointX="8.625" PointY="7.625" />
         <EntityTypeShape EntityType="StarterSiteModel.ItineraryItem" Width="1.5" PointX="6.25" PointY="8.75" />
+        <EntityTypeShape EntityType="StarterSiteModel.Activity" Width="1.5" PointX="0.75" PointY="10.75" />
+        <EntityTypeShape EntityType="StarterSiteModel.ActivityItem" Width="1.5" PointX="2.7288541787904008" PointY="10.807973315384226" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

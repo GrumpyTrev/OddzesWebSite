@@ -5,6 +5,25 @@
     <!-- SSDL content -->
     <edmx:StorageModels>
     <Schema Namespace="StarterSiteModel.Store" Provider="System.Data.SqlServerCe.4.0" ProviderManifestToken="4.0" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="Activity">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="TripId" Type="int" Nullable="false" />
+          <Property Name="Title" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="Index" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="ActivityItem">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="ActivityId" Type="int" Nullable="false" />
+          <Property Name="Title" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="Details" Type="nvarchar" MaxLength="1000" Nullable="false" />
+          <Property Name="Index" Type="int" Nullable="false" />
+        </EntityType>
         <EntityType Name="Average">
           <Key>
             <PropertyRef Name="Id" />
@@ -235,6 +254,8 @@
           </ReferentialConstraint>
         </Association>
         <EntityContainer Name="StarterSiteModelStoreContainer">
+          <EntitySet Name="Activity" EntityType="Self.Activity" store:Type="Tables" />
+          <EntitySet Name="ActivityItem" EntityType="Self.ActivityItem" store:Type="Tables" />
           <EntitySet Name="Average" EntityType="Self.Average" store:Type="Tables" />
           <EntitySet Name="Competition" EntityType="Self.Competition" store:Type="Tables" />
           <EntitySet Name="Currency" EntityType="Self.Currency" store:Type="Tables" />
@@ -409,6 +430,8 @@
           <EntitySet Name="Transactions" EntityType="StarterSiteModel.Transaction" />
           <EntitySet Name="ExpenseRecords" EntityType="StarterSiteModel.ExpenseRecord" />
           <EntitySet Name="ItineraryItems" EntityType="StarterSiteModel.ItineraryItem" />
+          <EntitySet Name="Activities" EntityType="StarterSiteModel.Activity" />
+          <EntitySet Name="ActivityItems" EntityType="StarterSiteModel.ActivityItem" />
         </EntityContainer>
         <EntityType Name="DocumentStorage">
           <Key>
@@ -493,6 +516,25 @@
           <Property Name="Details" Type="String" MaxLength="1000" FixedLength="false" Unicode="true" />
           <Property Name="ItemIndex" Type="Int32" Nullable="false" />
           <Property Name="EndTime" Type="DateTime" Precision="3" />
+        </EntityType>
+        <EntityType Name="Activity">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TripId" Type="Int32" Nullable="false" />
+          <Property Name="Title" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="Index" Type="Int32" Nullable="false" />
+        </EntityType>
+        <EntityType Name="ActivityItem">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="ActivityId" Type="Int32" Nullable="false" />
+          <Property Name="Title" Type="String" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="Details" Type="String" Nullable="false" MaxLength="1000" FixedLength="false" Unicode="true" />
+          <Property Name="Index" Type="Int32" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -716,6 +758,27 @@
                 <ScalarProperty Name="Date" ColumnName="Date" />
                 <ScalarProperty Name="TripId" ColumnName="TripId" />
                 <ScalarProperty Name="Title" ColumnName="Title" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Activities">
+            <EntityTypeMapping TypeName="StarterSiteModel.Activity">
+              <MappingFragment StoreEntitySet="Activity">
+                <ScalarProperty Name="Index" ColumnName="Index" />
+                <ScalarProperty Name="Title" ColumnName="Title" />
+                <ScalarProperty Name="TripId" ColumnName="TripId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ActivityItems">
+            <EntityTypeMapping TypeName="StarterSiteModel.ActivityItem">
+              <MappingFragment StoreEntitySet="ActivityItem">
+                <ScalarProperty Name="Index" ColumnName="Index" />
+                <ScalarProperty Name="Details" ColumnName="Details" />
+                <ScalarProperty Name="Title" ColumnName="Title" />
+                <ScalarProperty Name="ActivityId" ColumnName="ActivityId" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>

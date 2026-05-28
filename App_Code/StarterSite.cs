@@ -10,6 +10,23 @@
 using System;
 using System.Collections.Generic;
 
+public partial class Activity
+{
+    public int Id { get; set; }
+    public int TripId { get; set; }
+    public string Title { get; set; }
+    public int Index { get; set; }
+}
+
+public partial class ActivityItem
+{
+    public int Id { get; set; }
+    public int ActivityId { get; set; }
+    public string Title { get; set; }
+    public string Details { get; set; }
+    public int Index { get; set; }
+}
+
 public partial class Average
 {
     public int Id { get; set; }

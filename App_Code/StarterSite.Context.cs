@@ -41,4 +41,6 @@ public partial class StarterSiteEntities : DbContext
     public virtual DbSet<Transaction> Transactions { get; set; }
     public virtual DbSet<ExpenseRecord> ExpenseRecords { get; set; }
     public virtual DbSet<ItineraryItem> ItineraryItems { get; set; }
+    public virtual DbSet<Activity> Activities { get; set; }
+    public virtual DbSet<ActivityItem> ActivityItems { get; set; }
 }

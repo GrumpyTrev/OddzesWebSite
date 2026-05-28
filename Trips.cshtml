@@ -214,8 +214,42 @@
                             <tr>
                                 <td style="padding-left:0px">
                                     <details>
-                                        <summary style="font-size:1.25em">Activities/Ideas</summary>
-                                    </details>
+                                        <summary style="font-size:1.25em">
+                                            Activities/Ideas
+                                            <a href="@Href("~/Trips/Activities", trip.Id)"
+                                               class="btn" style="height:24px; padding:0px">
+                                                <i class='material-icons'>open_in_new</i>
+                                            </a>
+                                        </summary>
+                                         <div style="margin-left: 10px;">
+                                            @{
+                                                // Display any activities associated with this trip
+                                                IEnumerable<Activity> activities = model.Activities.Where(act => act.TripId == trip.Id);
+
+                                                foreach ( Activity activity in activities )
+                                                {
+                                                    // Display the activity title followed by the activities items
+                                                    <details>
+                                                        <summary style="font-size:1.25em">
+                                                            @activity.Title
+                                                            <a href="@Href("~/Trips/Activity", activity.Id)"
+                                                               class="btn" style="height:24px; padding:0px">
+                                                                <i class='material-icons'>open_in_new</i>
+                                                            </a>
+                                                        </summary>
+                                                        <div style="margin-left: 14px;">
+                                                            @{
+                                                                // Display the transactions associated with this record
+                                                                @HtmlHelpers.DisplayActivity(model.ActivityItems
+                                                                    .Where(act => ( act.ActivityId == activity.Id )), trip.Id, false,
+                                                                    "There are no items");
+                                                            }
+                                                        </div>
+                                                    </details>
+                                                }
+                                            }
+                                        </div>
+                                   </details>
                                 </td>
                             </tr>
                         }
