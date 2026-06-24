@@ -123,8 +123,6 @@
     // Get the selected currency id
     int currencyId = model.Currencies.Single(cur => cur.Name == expensesCurrency).Id;
 
-
-
     // And the expenses for this trip and expense record (this calculates the totals for the trip and for each user)
     Expenses expenses = Expenses.GetExpensesForTrip(tripId, currencyId, expensesRecordId);
 
@@ -151,13 +149,14 @@
                     </td>
                 </tr>
             </table>
-            @HtmlHelpers.DisplayExpenses(expenses.UserExpenses, currencyId, tripToDisplay,
-                ( tripToDisplay.Open == true ) && ( expensesRecordId == 0 ))
+          
+            @HtmlHelpers.DisplayExpenses(expenses.UserExpenses, currencyId, tripToDisplay, 
+               ( tripToDisplay.Open == true ) && ( expensesRecordId == 0 ))
             @HtmlHelpers.DisplayTransactions(tripTransactions, ( tripToDisplay.Open == false ) || ( expensesRecordId != 0 ))
         </form>
     }
     <p></p>
-
+    
     if ( tripToDisplay.Open == true )
     {
         <div style="display:flex">

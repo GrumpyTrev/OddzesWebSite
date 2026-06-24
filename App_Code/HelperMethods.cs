@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
-using System.Text;
 using System.Web.Security;
 using WebMatrix.WebData;
 
 public class HelperMethods
 {
+
     /// <summary>
     /// Determine all the participants associated with a trip 
     /// </summary>
@@ -15,12 +14,10 @@ public class HelperMethods
     /// <returns></returns>
     static public List<string> TripParticipants(int tripId)
     {
-        StarterSiteEntities model = new StarterSiteEntities();
-
-        IEnumerable<int> participants = model.Trippers.Where(tripper => tripper.TripId == tripId).Select(tripper => tripper.UserId);
+        IEnumerable<int> participants = TripModel.Trippers.Where(tripper => tripper.TripId == tripId).Select(tripper => tripper.UserId);
 
         return ( participants.Count() == 0 ) ? new List<string>() :
-            model.UserProfiles.Where(user => participants.Contains(user.UserId)).Select(user => user.Email).ToList();
+            TripModel.UserProfiles.Where(user => participants.Contains(user.UserId)).Select(user => user.Email).ToList();
     }
 
     /// <summary>
@@ -31,10 +28,9 @@ public class HelperMethods
     static public List<string> OrderedTripParticipants(int tripId)
     {
         List<string> participants = null;
-        StarterSiteEntities model = new StarterSiteEntities();
 
         // Get the list of users associated with the specified trip
-        IEnumerable<UserProfile> users = model.UserProfiles.Join(model.Trippers.Where(tripper => tripper.TripId == tripId),
+        IEnumerable<UserProfile> users = TripModel.UserProfiles.Join(TripModel.Trippers.Where(tripper => tripper.TripId == tripId),
             user => user.UserId, tripper => tripper.UserId, (user, tripper) => user);
 
         // Order the users so that the current user is first (if they are a participant)
@@ -59,9 +55,8 @@ public class HelperMethods
     /// <returns></returns>
     static public List<UserProfile> TripParticipantsUserProfiles(int tripId)
     {
-        StarterSiteEntities model = new StarterSiteEntities();
-        IEnumerable<int> participants = model.Trippers.Where(tripper => tripper.TripId == tripId).Select(tripper => tripper.UserId);
-        return model.UserProfiles.Where(user => participants.Contains(user.UserId)).ToList();
+        IEnumerable<int> participants = TripModel.Trippers.Where(tripper => tripper.TripId == tripId).Select(tripper => tripper.UserId);
+        return TripModel.UserProfiles.Where(user => participants.Contains(user.UserId)).ToList();
     }
 
     /// <summary>
@@ -70,10 +65,8 @@ public class HelperMethods
     /// <returns></returns>
     static public List<UserProfile> OrderedTrippers()
     {
-        StarterSiteEntities model = new StarterSiteEntities();
-
         // Get a local copy of the UserProfiles so that Entity LINQ isn't required when getting trippers only
-        List<UserProfile> users = model.UserProfiles.ToList();
+        List<UserProfile> users = TripModel.UserProfiles.ToList();
         IEnumerable<UserProfile> unorderedTrippers = users.Where(user => Roles.IsUserInRole(user.Email, "Tripper"));
 
         // Reorder this list so that the logged in user is at the top of the list.
@@ -98,9 +91,7 @@ public class HelperMethods
     /// <returns></returns>
     static public string AmountString( double amount, int currencyId )
     {
-        StarterSiteEntities model = new StarterSiteEntities();
-
-        Currency currencyToUse = model.Currencies.Single(cur => cur.Id == currencyId);
+        Currency currencyToUse = TripModel.Currencies.Single(cur => cur.Id == currencyId);
 
         return currencyToUse.Before ? string.Format("{0}{1}", currencyToUse.Symbol, amount.ToString("F2"))
             : string.Format("{1}{0}", currencyToUse.Symbol, amount.ToString("F2"));
@@ -113,7 +104,7 @@ public class HelperMethods
     /// <returns></returns>
     static public string UserNameString( int userId )
     {
-        return new StarterSiteEntities().UserProfiles.Single(user => user.UserId == userId).Email;
+        return TripModel.UserProfiles.Single(user => user.UserId == userId).Email;
     }
 
     /// <summary>
@@ -123,7 +114,7 @@ public class HelperMethods
     /// <returns></returns>
     static public int SterlingId()
     {
-        return new StarterSiteEntities().Currencies.Single(cur => cur.Name == SterlingName).Id;
+        return TripModel.Currencies.Single(cur => cur.Name == SterlingName).Id;
     }
 
     /// <summary>
@@ -142,16 +133,14 @@ public class HelperMethods
     {
         double convertedAmount = amount;
 
-        StarterSiteEntities model = new StarterSiteEntities();
-
         if ( fromCurrency != toCurrency )
         {
-            Currency from = model.Currencies.Single(cur => cur.Id == fromCurrency);
-            Currency to = model.Currencies.Single(cur => cur.Id == toCurrency);
+            Currency from = TripModel.Currencies.Single( cur => cur.Id == fromCurrency);
+            Currency to = TripModel.Currencies.Single( cur => cur.Id == toCurrency);
 
             if ( from.Name == SterlingName )
             {
-                // Just convert to toCurrency
+                // Just convert to GetCurrency
                 convertedAmount = amount / to.Rate;
             }
             else if ( to.Name == SterlingName )

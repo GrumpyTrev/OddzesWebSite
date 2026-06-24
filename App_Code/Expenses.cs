@@ -27,18 +27,16 @@ public class Expenses
         CurrencyId = currencyId;
         UserExpenses = new List<UserExpense>();
 
-        StarterSiteEntities model = new StarterSiteEntities();
-
         // Get all the transactions associated with the specified trip. Only consider those in the specified expense record
-        IEnumerable<Transaction> tripTransactions = model.Transactions.
-            Where(tran => ( tran.TripId == tripId ) && ( tran.ExpensesId == expensesRecordId ) );
+        List<Transaction> tripTransactions = TripModel.Transactions.
+            Where(tran => ( tran.TripId == tripId ) && ( tran.ExpensesId == expensesRecordId ) ).ToList();
 
         // Add up all the expenses associated with the current trip and convert to the specified currency
-        IEnumerable<Transaction> expenses = tripTransactions.Where(tran => tran.IsBalance == false);
+        List<Transaction> expenses = tripTransactions.Where(tran => tran.IsBalance == false).ToList();
         TotalExpenses = expenses.Sum(trans => HelperMethods.ConvertAmount(trans.LocalValue, trans.CurrencyId, currencyId));
 
         // Get the list of users associated with the current trip
-        IEnumerable<UserProfile> users = model.UserProfiles.Join(model.Trippers.Where(tripper => tripper.TripId == tripId),
+        IEnumerable<UserProfile> users = TripModel.UserProfiles.Join(TripModel.Trippers.Where(tripper => tripper.TripId == tripId),
             user => user.UserId, tripper => tripper.UserId, (user, tripper) => user);
 
         // Determine expenses for each user in the trip.
@@ -50,19 +48,9 @@ public class Expenses
 
             // Now work out the share of the expenses in each transaction attributable to this user.
             // For now assume an equal share
-            double userShare = 0;
-            foreach ( Transaction transaction in tripTransactions )
-            {
-                Sharer sharer = model.Sharers.SingleOrDefault(split => ( split.TransactionId == transaction.Id ) &&
-                                                                       ( split.UserId == user.UserId ));
-                if ( sharer != null )
-                {
-                    // Add a share of the transaction. This is (currently) the transaction amount divided by the number
-                    // of splitters for the transaction
-                    userShare += HelperMethods.ConvertAmount(transaction.LocalValue, transaction.CurrencyId, currencyId) /
-                        ( int )transaction.ShareCount;
-                }
-            }
+            List<Sharer> shares = TripModel.Sharers.Where(split => split.UserId == user.UserId).ToList();
+            double userShare = expenses.Where(trans => shares.Any(share => share.TransactionId == trans.Id)).
+                Sum(trans => HelperMethods.ConvertAmount(trans.LocalValue, trans.CurrencyId, currencyId) / ( int )trans.ShareCount);
 
             // Work out how much this user has overpaid or underpaid by taking any payments made or received into account
             double paymentsReceived = tripTransactions.Where(tran => ( tran.PaidToId == user.UserId ) && ( tran.IsBalance == true )).
